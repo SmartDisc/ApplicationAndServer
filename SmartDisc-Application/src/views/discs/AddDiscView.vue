@@ -98,6 +98,14 @@ async function handlePairDisc() {
   gap: 14px;
 }
 
+@media (min-width: 768px) {
+  .add-form {
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
+  }
+}
+
 .add-error {
   font-family: var(--sd-font-body);
   font-size: 13px;

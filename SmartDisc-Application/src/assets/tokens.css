@@ -93,6 +93,24 @@
   --sd-dur-fast:   160ms;
   --sd-dur-base:   260ms;
   --sd-dur-slow:   420ms;
+
+  /* Layout / responsive breakpoints.
+     NOTE: custom properties cannot be used inside @media conditions — media
+     queries use the literal 768px / 1024px values; these tokens document them. */
+  --sd-bp-md: 768px;
+  --sd-bp-lg: 1024px;
+  --sd-content-max:    390px;
+  --sd-content-max-md: 720px;
+  --sd-gutter: 22px;
+  /* Space views reserve above the bottom tab bar; collapses on tablet where
+     navigation moves to the side rail. */
+  --sd-nav-clearance: 100px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --sd-nav-clearance: 0px;
+  }
 }
 
 /* Typography scale */

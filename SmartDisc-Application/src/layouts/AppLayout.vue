@@ -1,5 +1,6 @@
 <script setup>
 import SdTabBar from '@/components/ui/SdTabBar.vue'
+import SdNavRail from '@/components/ui/SdNavRail.vue'
 
 defineProps({
   tabs: { type: Boolean, default: true },
@@ -10,6 +11,11 @@ defineProps({
   <div class="app-wrap">
     <div class="app-blooms" aria-hidden="true">
       <span class="app-blooms__b3" />
+    </div>
+    <!-- Tablet-only side rail (hidden <768px). Rendered even for :tabs="false"
+         takeover views so tablet navigation stays persistent. -->
+    <div class="app-navrail-wrap">
+      <SdNavRail />
     </div>
     <div class="app-frame">
       <slot />
@@ -29,6 +35,8 @@ defineProps({
   background: var(--sd-paper);
   position: relative;
   overflow: hidden;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 .app-blooms {
@@ -71,15 +79,19 @@ defineProps({
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 390px;
+  max-width: var(--sd-content-max);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  padding: 0 22px;
+  padding: 0 var(--sd-gutter);
   padding-top: env(safe-area-inset-top, 0);
+}
+
+.app-navrail-wrap {
+  display: none;
 }
 
 .app-tabbar-wrap {
@@ -87,7 +99,42 @@ defineProps({
   z-index: 1;
   flex: none;
   width: 100%;
-  max-width: 390px;
+  max-width: var(--sd-content-max);
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ── Tablet (≥768px): side rail + wider centered content column ─────────── */
+@media (min-width: 768px) {
+  .app-wrap {
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .app-navrail-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    flex: none;
+    padding: calc(24px + env(safe-area-inset-top, 0)) 8px calc(24px + env(safe-area-inset-bottom, 0)) 24px;
+  }
+
+  .app-frame {
+    max-width: var(--sd-content-max-md);
+    padding: 0 32px;
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .app-tabbar-wrap {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-frame {
+    max-width: 960px;
+  }
 }
 </style>

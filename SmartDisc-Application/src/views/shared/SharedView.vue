@@ -83,7 +83,22 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding-bottom: 100px;
+  padding-bottom: var(--sd-nav-clearance);
+}
+
+@media (min-width: 768px) {
+  .shared-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shared-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .shared-error {
@@ -98,7 +113,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   padding: 40px 24px;
-  margin-bottom: 100px;
+  margin-bottom: var(--sd-nav-clearance);
   height: 100%;
 }
 

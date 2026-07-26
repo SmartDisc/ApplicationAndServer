@@ -67,7 +67,7 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
       />
     </div>
 
-    <div style="height: 100px;" />
+    <div :style="{ height: 'var(--sd-nav-clearance)' }" />
   </AppLayout>
 </template>
 
@@ -115,5 +115,14 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .throws-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    align-items: stretch;
+  }
 }
 </style>

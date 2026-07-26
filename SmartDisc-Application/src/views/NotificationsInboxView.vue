@@ -375,6 +375,13 @@ function onMarkAllRead() {
   min-width: 0;
 }
 
+/* ≥768px: keep the text measure readable in the wider column */
+@media (min-width: 768px) {
+  .notif__body {
+    max-width: 640px;
+  }
+}
+
 .notif__title {
   font-family: var(--sd-font-body);
   font-weight: 600;

@@ -367,6 +367,7 @@ const en = {
     },
   },
   search: {
+    title: 'Search',
     placeholder: 'Search discs & throws…',
     filterAll: 'All · {count}',
     filterDiscs: 'Discs · {count}',
@@ -807,6 +808,7 @@ const de = {
     },
   },
   search: {
+    title: 'Suche',
     placeholder: 'Discs & Würfe suchen…',
     filterAll: 'Alle · {count}',
     filterDiscs: 'Discs · {count}',

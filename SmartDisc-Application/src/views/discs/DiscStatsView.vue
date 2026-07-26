@@ -90,7 +90,7 @@ const days = computed(() => t('discs.stats.weekdays'))
       </div>
     </SdCard>
 
-    <div style="height: 100px;" />
+    <div class="nav-spacer" />
   </div>
 </template>
 
@@ -99,6 +99,28 @@ const days = computed(() => t('discs.stats.weekdays'))
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.nav-spacer {
+  height: var(--sd-nav-clearance);
+  flex: none;
+}
+
+/* ≥768px: 2-column dashboard — speed chart spans the full width, the
+   RPM/height tiles and best-throw card share the second row. */
+@media (min-width: 768px) {
+  .stats-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .stats-wrap > :first-child,
+  .nav-spacer {
+    grid-column: 1 / -1;
+  }
+  /* Taller bars so the full-width chart doesn't letterbox */
+  .chart { height: 96px; }
 }
 
 .glass-card__header {

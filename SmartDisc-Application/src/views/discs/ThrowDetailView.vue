@@ -67,17 +67,18 @@ function onToggleFav() {
         <p class="throw-time">{{ throwTime }}</p>
       </div>
 
-      <!-- Primary stats -->
-      <div class="stat-row">
-        <SdStatTile dark :v="throw_?.rpm ?? '—'" :k="t('discs.throwDetail.rpm')" />
-        <SdStatTile dark :v="durationS" :k="t('discs.throwDetail.duration')" />
-        <SdStatTile dark :v="maxAlt" :k="t('discs.throwDetail.maxAltitude')" />
-      </div>
+      <!-- Stats: two stacked rows on phones, one combined row ≥768px -->
+      <div class="stat-rows">
+        <div class="stat-row stat-row--primary">
+          <SdStatTile dark :v="throw_?.rpm ?? '—'" :k="t('discs.throwDetail.rpm')" />
+          <SdStatTile dark :v="durationS" :k="t('discs.throwDetail.duration')" />
+          <SdStatTile dark :v="maxAlt" :k="t('discs.throwDetail.maxAltitude')" />
+        </div>
 
-      <!-- Secondary stats -->
-      <div class="stat-row">
-        <SdStatTile dark :v="avgTemp" :k="t('discs.throwDetail.avgTemp')" />
-        <SdStatTile dark :v="recordedAt" :k="t('discs.throwDetail.recordedAt')" />
+        <div class="stat-row stat-row--secondary">
+          <SdStatTile dark :v="avgTemp" :k="t('discs.throwDetail.avgTemp')" />
+          <SdStatTile dark :v="recordedAt" :k="t('discs.throwDetail.recordedAt')" />
+        </div>
       </div>
 
       <div class="throw-meta">
@@ -115,6 +116,8 @@ function onToggleFav() {
   overflow: hidden;
   display: flex;
   justify-content: center;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 .throw-bg {
@@ -145,10 +148,11 @@ function onToggleFav() {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 390px;
+  max-width: var(--sd-content-max);
   display: flex;
   flex-direction: column;
-  padding: 0 22px 32px;
+  padding: 0 var(--sd-gutter) 32px;
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 /* Override AppBar styles for dark background */
@@ -211,6 +215,27 @@ function onToggleFav() {
   display: flex;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+/* ≥768px: widen the column and let all five stat tiles share one row */
+@media (min-width: 768px) {
+  .throw-content {
+    max-width: var(--sd-content-max-md);
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .stat-rows {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-row {
+    margin-bottom: 0;
+  }
+  /* 3 + 2 tiles → equal widths across the combined row */
+  .stat-row--primary { flex: 3; }
+  .stat-row--secondary { flex: 2; }
 }
 
 .throw-meta {

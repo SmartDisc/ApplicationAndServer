@@ -198,7 +198,7 @@ async function handleInvite(friend) {
       </SdBtn>
     </SdCard>
 
-    <div style="height: 100px;" />
+    <div class="nav-spacer" />
 
     <!-- Invite a friend sheet -->
     <SdBottomSheet v-model="inviteSheet" :title="t('discs.people.inviteSheetTitle')">
@@ -272,6 +272,23 @@ async function handleInvite(friend) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.nav-spacer {
+  height: var(--sd-nav-clearance);
+  flex: none;
+}
+
+/* ≥768px: "People with access" and "Pending invites" side by side */
+@media (min-width: 768px) {
+  .people-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .nav-spacer {
+    grid-column: 1 / -1;
+  }
 }
 
 .card-row {

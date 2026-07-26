@@ -205,7 +205,7 @@ function openWebsite() {
       </div>
     </div>
 
-    <div style="height: 100px;"/>
+    <div :style="{ height: 'var(--sd-nav-clearance)' }"/>
 
     <ChangePasswordSheet v-model="passwordSheet"/>
     <DeleteAccountSheet v-model="deleteSheet"/>
@@ -345,5 +345,14 @@ function openWebsite() {
 
 .danger-btn:hover {
   background: rgba(192, 88, 78, .04) !important;
+}
+
+/* ≥768px: full-width account action buttons look unwieldy in the wide
+   column — cap them at a comfortable tap width. */
+@media (min-width: 768px) {
+  .change-password-btn,
+  .danger-btn {
+    max-width: 440px;
+  }
 }
 </style>

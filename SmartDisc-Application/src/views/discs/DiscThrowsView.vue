@@ -60,7 +60,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 100px;
+  padding-bottom: var(--sd-nav-clearance);
 }
 
 .throws-filters {
@@ -83,6 +83,15 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .throws-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    align-items: stretch;
+  }
 }
 
 .throws-empty {

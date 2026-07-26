@@ -20,6 +20,9 @@ const lastTouchY  = ref(0)
 const lastTouchMs = ref(0)
 
 function onDragStart(e) {
+  // ≥768px the sheet renders as a centered dialog — swipe-to-dismiss is a
+  // bottom-sheet gesture and would fight the dialog's centering transform.
+  if (window.matchMedia('(min-width: 768px)').matches) return
   dragStart.value   = e.touches[0].clientY
   lastTouchY.value  = e.touches[0].clientY
   lastTouchMs.value = Date.now()
@@ -128,7 +131,7 @@ watch(() => props.modelValue, (open) => {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 390px;
+  max-width: var(--sd-content-max);
   max-height: 85dvh;
   background: var(--sd-glass-paper-bg);
   backdrop-filter: var(--sd-glass-blur-strong);
@@ -213,4 +216,36 @@ watch(() => props.modelValue, (open) => {
 }
 .sheet-panel-enter-from,
 .sheet-panel-leave-to { transform: translateX(-50%) translateY(100%) !important; }
+
+/* ── Tablet (≥768px): centered dialog instead of a bottom sheet ─────────── */
+@media (min-width: 768px) {
+  .sheet-panel {
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 540px;
+    max-height: 80dvh;
+    border-bottom: 1px solid var(--sd-glass-paper-border);
+    border-radius: var(--sd-r-xl);
+    padding-bottom: 0;
+  }
+
+  .sheet-drag-zone { cursor: default; }
+  .sheet-drag-zone:active { cursor: default; }
+  .sheet-pill { display: none; }
+  .sheet-header { padding-top: 20px; }
+
+  /* Fade/scale in place — the slide-off-screen transform above is a
+     bottom-sheet-only affordance. */
+  .sheet-panel-enter-active,
+  .sheet-panel-leave-active {
+    transition: transform var(--sd-dur-base) var(--sd-ease-glass),
+                opacity var(--sd-dur-base) var(--sd-ease-out);
+  }
+  .sheet-panel-enter-from,
+  .sheet-panel-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96) !important;
+  }
+}
 </style>

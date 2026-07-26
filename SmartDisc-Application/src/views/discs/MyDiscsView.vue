@@ -101,7 +101,24 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding-bottom: 100px;
+  padding-bottom: var(--sd-nav-clearance);
+}
+
+@media (min-width: 768px) {
+  .mydisc-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-items: stretch;
+    /* Keep the last row reachable above the floating FAB */
+    padding-bottom: 88px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mydisc-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .mydisc-actions {
@@ -117,7 +134,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   padding: 40px 24px;
-  margin-bottom: 100px;
+  margin-bottom: var(--sd-nav-clearance);
   height: 100%;
 }
 
@@ -161,10 +178,14 @@ onMounted(() => {
   margin: 0 0 20px;
 }
 
+/* Sticks to the bottom of the scrolling content column (.app-frame), so it
+   stays aligned with the content at any column width — no viewport math. */
 .fab {
-  position: fixed;
-  bottom: 110px;
-  right: max(22px, calc(50vw - 173px));
+  position: sticky;
+  bottom: 24px;
+  margin-top: auto;
+  margin-left: auto;
+  flex: none;
   width: 58px;
   height: 58px;
   border-radius: 50%;

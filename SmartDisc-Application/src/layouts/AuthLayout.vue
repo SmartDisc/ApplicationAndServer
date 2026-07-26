@@ -26,6 +26,8 @@ defineProps({
   background: var(--sd-paper);
   position: relative;
   overflow: hidden;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 .auth-wrap--dark {
   background: var(--sd-ink-900);
@@ -70,12 +72,27 @@ defineProps({
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 390px;
+  max-width: var(--sd-content-max);
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: 0 22px;
+  padding: 0 var(--sd-gutter);
   padding-top: env(safe-area-inset-top, 0);
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ── Tablet (≥768px): centered auth card instead of a full-height column.
+   The frame no longer stretches to 100dvh, so the .auth-spacer/.auth-footer
+   pattern keeps the footer right below the form instead of at screen bottom. */
+@media (min-width: 768px) {
+  .auth-wrap {
+    align-items: center;
+  }
+  .auth-frame {
+    max-width: 440px;
+    min-height: 0;
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
 }
 </style>

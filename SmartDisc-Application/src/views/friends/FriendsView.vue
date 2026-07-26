@@ -28,11 +28,26 @@ onMounted(() => {
   <AppLayout :tabs="false">
     <SdAppBar back :title="t('friends.page.title')" />
 
-    <AddFriendSearch />
-    <IncomingRequests />
-    <SentRequests />
-    <FriendsList />
+    <div class="friends-grid">
+      <AddFriendSearch />
+      <IncomingRequests />
+      <SentRequests />
+      <FriendsList />
+    </div>
 
-    <div style="height: 100px;" />
+    <div :style="{ height: 'var(--sd-nav-clearance)' }" />
   </AppLayout>
 </template>
+
+<style scoped>
+/* Phones keep the natural stacked flow (each section brings its own
+   margins); ≥768px the four section cards flow into two columns. */
+@media (min-width: 768px) {
+  .friends-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+    align-items: start;
+  }
+}
+</style>
