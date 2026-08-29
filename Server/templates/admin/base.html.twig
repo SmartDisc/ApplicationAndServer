@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="admin-topbar">
+        <nav class="admin-nav">
+            <a class="{{ app.request.attributes.get('_route') starts with 'app_admin_disc_crud_' ? 'is-active' : '' }}" href="{{ path('app_admin_disc_crud_index') }}">Discs</a>
+            <a class="{{ app.request.attributes.get('_route') starts with 'app_admin_user_crud_' ? 'is-active' : '' }}" href="{{ path('app_admin_user_crud_index') }}">Users</a>
+            <a class="admin-nav__signout" href="{{ path('app_admin_logout') }}">Sign out</a>
+        </nav>
+        <span class="admin-nav__user">{{ app.user.userIdentifier }}</span>
+    </div>
+
+    <div class="admin-main">
+        {% for message in app.flashes('success') %}
+            <div class="admin-flash admin-flash--success">{{ message }}</div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="admin-flash admin-flash--error">{{ message }}</div>
+        {% endfor %}
+
+        {% block admin_body %}{% endblock %}
+    </div>
+{% endblock %}

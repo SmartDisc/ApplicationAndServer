@@ -9,7 +9,7 @@
 services:
   php:
     build:
-      context: ./SmartDisc-Server
+      context: Server
       target: frankenphp_dev
     restart: unless-stopped
     environment:
@@ -32,11 +32,11 @@ services:
       MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-devmercuresecretdevmercuresecret}
       MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-devmercuresecretdevmercuresecret}
     volumes:
-      - ./SmartDisc-Server:/app
+      - ./Server:/app
       # Keep var/ off the bind-mount for faster I/O on Mac/Windows; comment to inspect from the host.
       - /app/var
-      - ./SmartDisc-Server/frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
-      - ./SmartDisc-Server/frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
+      - ./Server/frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
+      - ./Server/frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
       - caddy_data:/data
       - caddy_config:/config
     ports:

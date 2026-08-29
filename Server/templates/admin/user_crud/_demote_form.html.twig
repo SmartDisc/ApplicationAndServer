@@ -1,0 +1,4 @@
+<form class="admin-inline-form" method="post" action="{{ path('app_admin_user_crud_demote', {'id': user.id}) }}" onsubmit="return confirm('Are you sure you want to remove admin access from this user?');">
+    <input type="hidden" name="_token" value="{{ csrf_token('demote' ~ user.id) }}">
+    <button class="admin-btn admin-btn--danger" type="submit">Demote</button>
+</form>

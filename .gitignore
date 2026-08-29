@@ -11,3 +11,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Local-only docker compose overrides (e.g. exposing the database port to the host)
+compose.override.yaml

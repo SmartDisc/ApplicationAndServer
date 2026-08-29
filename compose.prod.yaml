@@ -13,7 +13,7 @@
 services:
   php:
     build:
-      context: ./SmartDisc-Server
+      context: Server
       target: frankenphp_prod
       args:
         # Bakes the JWT keypair at build time with this passphrase (see
