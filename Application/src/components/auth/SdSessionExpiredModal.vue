@@ -50,7 +50,10 @@ function goToSignIn() {
 .session-expired-panel {
   width: 100%;
   max-width: 340px;
-  background: var(--sd-glass-paper-bg);
+  /* A bit more opaque than the shared --sd-glass-paper-bg token (used as-is by
+     SdBottomSheet): this panel is blocking and non-dismissable, so it should
+     read clearly over whatever busy screen it interrupts. */
+  background: rgba(242, 234, 226, 0.88);
   -webkit-backdrop-filter: var(--sd-glass-blur-strong);
           backdrop-filter: var(--sd-glass-blur-strong);
   border: 1px solid var(--sd-glass-paper-border);

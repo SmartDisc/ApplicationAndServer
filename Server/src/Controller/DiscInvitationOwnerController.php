@@ -11,6 +11,7 @@ use App\Repository\FriendshipRepository;
 use App\Repository\NotificationRepository;
 use App\Repository\UserRepository;
 use App\Serializer\DiscSerializer;
+use App\Serializer\UserAvatarPresenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,6 +38,7 @@ class DiscInvitationOwnerController extends AbstractController
         DiscRepository $discRepository,
         DiscInvitationRepository $discInvitationRepository,
         DiscSerializer $discSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
     ): JsonResponse {
         $disc = $discRepository->find($id);
 
@@ -47,6 +49,12 @@ class DiscInvitationOwnerController extends AbstractController
         }
 
         $invitations = $discInvitationRepository->findPendingForDisc($disc);
+
+        // One avatar-metadata query for the whole invitation list.
+        $userAvatarPresenter->preload(array_map(
+            static fn (DiscInvitation $invitation) => $invitation->getToUser(),
+            $invitations,
+        ));
 
         return $this->json(array_map($discSerializer->invitation(...), $invitations));
     }

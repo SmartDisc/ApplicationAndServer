@@ -34,8 +34,12 @@ defineEmits(['toggle-fav'])
       />
     </button>
     <span v-else class="throw-row__star">
-      <Star v-if="fav" :size="20" :stroke-width="2" fill="var(--sd-gold-500)" :style="{ color: 'var(--sd-gold-500)' }" />
-      <span v-else style="width: 20px; display: inline-block;" />
+      <Star
+        :size="20"
+        :stroke-width="2"
+        :fill="fav ? 'var(--sd-gold-500)' : 'none'"
+        :style="{ color: fav ? 'var(--sd-gold-500)' : 'var(--sd-mist)' }"
+      />
     </span>
     <div class="throw-row__body">
       <div :class="['throw-row__name', { 'throw-row__name--auto': auto }]">{{ name }}</div>
@@ -79,8 +83,9 @@ defineEmits(['toggle-fav'])
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
-.throw-row__star:focus,
-.throw-row__star:focus-visible {
+/* Pointer/touch focus leaves nothing behind; keyboard focus keeps the
+   global :focus-visible ring. */
+.throw-row__star:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }

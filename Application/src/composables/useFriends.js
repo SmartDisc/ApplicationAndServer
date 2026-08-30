@@ -3,22 +3,24 @@ import { apiFetch } from '@/services/api'
 import { useAuthStore, mapAuthError } from '@/stores/auth'
 import { useI18n } from '@/i18n'
 
-// Accepted friends: [{ friendshipId, id, name, email }]
+// Accepted friends: [{ friendshipId, id, name, email, hasAvatar, avatarUrl }]
 const _friends = ref([])
 const _friendsLoading = ref(false)
 const _friendsError = ref(null)
 
-// Incoming pending requests: [{ id, fromUserId, fromName, fromEmail, createdAt }]
+// Incoming pending requests, avatar keys prefixed to match their sibling name/email keys:
+// [{ id, fromUserId, fromName, fromEmail, fromHasAvatar, fromAvatarUrl, createdAt }]
 const _requests = ref([])
 const _requestsLoading = ref(false)
 const _requestsError = ref(null)
 
-// Outgoing pending requests: [{ id, toUserId, toName, toEmail, createdAt }]
+// Outgoing pending requests, likewise prefixed:
+// [{ id, toUserId, toName, toEmail, toHasAvatar, toAvatarUrl, createdAt }]
 const _sentRequests = ref([])
 const _sentRequestsLoading = ref(false)
 const _sentRequestsError = ref(null)
 
-// Live "add friend" search results: [{ id, name, email }]
+// Live "add friend" search results: [{ id, name, email, hasAvatar, avatarUrl }]
 const _searchResults = ref([])
 const _searchLoading = ref(false)
 const _searchError = ref(null)

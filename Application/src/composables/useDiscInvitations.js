@@ -4,7 +4,7 @@ import { useAuthStore, mapAuthError } from '@/stores/auth'
 import { useI18n } from '@/i18n'
 
 // Pending invites for whichever disc is currently open (owner view):
-// [{ id, toUserId, toName, toEmail, createdAt }]
+// [{ id, toUserId, toName, toEmail, toHasAvatar, toAvatarUrl, createdAt }]
 const _discInvites = ref([])
 const _discInvitesLoading = ref(false)
 const _discInvitesError = ref(null)
@@ -16,7 +16,7 @@ const _myInvitesLoading = ref(false)
 const _myInvitesError = ref(null)
 
 // People (besides the owner) with access to whichever disc is currently open
-// (owner view): [{ id, name, email }]
+// (owner view): [{ id, name, email, hasAvatar, avatarUrl }]
 const _discMembers = ref([])
 const _discMembersLoading = ref(false)
 const _discMembersError = ref(null)

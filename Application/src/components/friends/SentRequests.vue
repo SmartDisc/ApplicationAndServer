@@ -19,7 +19,7 @@ const {sentRequests} = useFriends()
         :title="r.toName"
         :subtitle="r.toEmail"
       >
-        <template #icon><SdAvatar :name="r.toName" :size="38" /></template>
+        <template #icon><SdAvatar :name="r.toName" :size="38" :has-image="!!r.toHasAvatar" :image-url="r.toAvatarUrl" /></template>
         <template #trailing>
           <span class="pending-status">
             <Clock :size="14" />

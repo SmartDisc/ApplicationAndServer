@@ -55,7 +55,7 @@ async function handleRemoveMember() {
     </div>
 
     <div class="member-row">
-      <SdAvatar :name="user?.name ?? '?'" :hue="210" />
+      <SdAvatar :name="user?.name ?? '?'" :hue="210" :has-image="!!user?.hasAvatar" :image-url="user?.avatarUrl" />
       <div class="member-info">
         <div class="member-name">{{ user?.name }}</div>
         <div class="member-email">{{ user?.email }}</div>
@@ -74,7 +74,7 @@ async function handleRemoveMember() {
       :key="member.id"
       class="member-row member-row--border"
     >
-      <SdAvatar :name="member.name" :hue="320" />
+      <SdAvatar :name="member.name" :hue="320" :has-image="!!member.hasAvatar" :image-url="member.avatarUrl" />
       <div class="member-info">
         <div class="member-name">{{ member.name }}</div>
         <div class="member-email">{{ member.email }}</div>

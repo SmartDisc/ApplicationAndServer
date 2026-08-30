@@ -123,6 +123,22 @@ describe('apiFetch', () => {
     }
   })
 
+  it('sends a FormData body untouched and without a Content-Type header', async () => {
+    fetch.mockResolvedValue(jsonResponse({ hasAvatar: true, avatarUrl: '/api/users/1/avatar?v=42' }))
+
+    const form = new FormData()
+    form.append('image', new Blob(['bytes'], { type: 'image/webp' }), 'avatar.webp')
+
+    await apiFetch('/api/me/avatar', { method: 'POST', body: form, token: 'tok123' })
+
+    const [, init] = fetch.mock.calls[0]
+    // The boundary only exists on the FormData instance the browser is handed,
+    // so a serialized body or a hand-written Content-Type would break the upload.
+    expect(init.body).toBe(form)
+    expect(init.headers['Content-Type']).toBeUndefined()
+    expect(init.headers.Authorization).toBe('Bearer tok123')
+  })
+
   it('returns null data for a non-JSON (e.g. empty 204) response without throwing', async () => {
     fetch.mockResolvedValue({
       ok: true,

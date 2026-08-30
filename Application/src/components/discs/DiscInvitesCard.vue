@@ -82,7 +82,7 @@ async function handleInvite(friend) {
       class="member-row"
       :class="{ 'member-row--border': i > 0 }"
     >
-      <SdAvatar :name="inv.toName" :hue="260" />
+      <SdAvatar :name="inv.toName" :hue="260" :has-image="!!inv.toHasAvatar" :image-url="inv.toAvatarUrl" />
       <div class="member-info">
         <div class="member-name">{{ inv.toName }}</div>
         <div class="member-email">{{ inv.toEmail }}</div>
@@ -125,7 +125,7 @@ async function handleInvite(friend) {
       <template v-else>
         <div class="invite-candidates">
           <div v-for="f in inviteCandidates" :key="f.friendshipId" class="invite-candidate-row">
-            <SdAvatar :name="f.name" :size="34" />
+            <SdAvatar :name="f.name" :size="34" :has-image="!!f.hasAvatar" :image-url="f.avatarUrl" />
             <div class="invite-candidate-info">
               <div class="invite-candidate-name">{{ f.name }}</div>
               <div class="invite-candidate-email">{{ f.email }}</div>

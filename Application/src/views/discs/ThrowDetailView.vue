@@ -458,7 +458,7 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
 .delete-header__sub {
   font-family: var(--sd-font-body);
   font-size: 13px;
-  color: var(--sd-fg2);
+  color: var(--sd-fg1);
   margin: 0;
   line-height: 1.4;
 }

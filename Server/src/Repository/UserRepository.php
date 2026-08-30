@@ -56,6 +56,38 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * Whether $target can be turned up by $viewer through friend search — i.e.
+     * whether some query string exists that searchByEmailOrName() would return
+     * $target for.
+     *
+     * Read searchByEmailOrName() directly above and FriendController::search()
+     * before changing this. That endpoint applies NO relationship restriction:
+     * it substring-matches any account's name or email on a caller-supplied
+     * query of two or more characters, and its exclusion list only *removes*
+     * people the viewer is already related to. So the honest answer here is
+     * "yes, for every account whose name or email is at least two characters
+     * long", which is every real account — searching is how you find a stranger
+     * to send a friend request to, so it is meant to be open.
+     *
+     * That makes this the broadest clause of AvatarVoter by a wide margin. It
+     * lives here, as its own predicate rather than as a bare `return true` in
+     * the voter, so that if friend search is ever narrowed (to friends-of-
+     * friends, or to exact email matches) avatar visibility narrows with it in
+     * the same edit.
+     */
+    public function isDiscoverableInFriendSearch(User $viewer, User $target): bool
+    {
+        if ($viewer->getId() === $target->getId()) {
+            return false;
+        }
+
+        $minimumQueryLength = 2;
+
+        return mb_strlen((string) $target->getName()) >= $minimumQueryLength
+            || mb_strlen((string) $target->getEmail()) >= $minimumQueryLength;
+    }
+
     //    /**
     //     * @return User[] Returns an array of User objects
     //     */

@@ -6,6 +6,8 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowRow from '@/components/discs/SdThrowRow.vue'
+import SdDiscImage from '@/components/discs/SdDiscImage.vue'
+import SdAvatar from '@/components/ui/SdAvatar.vue'
 import { SdChip, SdCard, SdIconBtn, SdSectionLabel } from '@/components/ui'
 import { useDiscs } from '@/composables/useDiscs'
 import { formatThrowTime } from '@/composables/useThrows'
@@ -30,10 +32,24 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
     <!-- Hero card -->
     <SdCard v-if="disc" class="hero-card" :padding="18">
       <div class="hero-top">
+        <SdDiscImage
+          :image-url="disc.imageUrl"
+          :size="54"
+          :alt="t('discs.photo.alt', { name: disc.name })"
+        />
         <div class="hero-info">
           <div class="hero-name">{{ disc.name }}</div>
           <div class="hero-uuid">{{ disc.uuid }}</div>
-          <div class="hero-uuid">{{ t('shared.detail.ownedBy', { owner: disc.owner }) }}</div>
+          <div class="hero-owner">
+            <SdAvatar
+              :name="disc.owner || '?'"
+              :size="18"
+              :hue="260"
+              :has-image="!!disc.ownerHasAvatar"
+              :image-url="disc.ownerAvatarUrl"
+            />
+            <span class="hero-uuid">{{ t('shared.detail.ownedBy', { owner: disc.owner }) }}</span>
+          </div>
         </div>
         <SdChip tone="read">
           <template #icon><Eye :size="12" /></template>
@@ -96,6 +112,21 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
   color: var(--sd-fg3);
   letter-spacing: 0.02em;
   margin-top: 4px;
+}
+
+.hero-owner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 5px;
+}
+
+.hero-owner .hero-uuid {
+  margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-row { display: flex; gap: 10px; }

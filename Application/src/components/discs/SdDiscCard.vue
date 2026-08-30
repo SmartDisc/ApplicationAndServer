@@ -1,33 +1,32 @@
 <script setup>
-import { computed } from 'vue'
 import { Activity, Eye, Star } from 'lucide-vue-next'
 import SdChip from '@/components/ui/SdChip.vue'
-import { usePreferences } from '@/composables/usePreferences'
+import SdDiscImage from '@/components/discs/SdDiscImage.vue'
 import { useI18n } from '@/i18n'
-import { convertDistance, distanceUnitLabel } from '@/utils/units'
 
-const props = defineProps({
+defineProps({
   name:       { type: String, required: true },
   uuid:       { type: String, required: true },
-  throws:     { type: [Number, String], default: 0 },
-  longest:    { type: [Number, String], default: 0 },
-  players:    { type: [Number, String], default: 0 },
   fav:        { type: Boolean, default: false },
   shared:     { type: Boolean, default: false },
   lastActive: { type: String, default: null },
+  imageUrl:   { type: String, default: null },
 })
 
 defineEmits(['toggle-fav'])
 
-const { distanceUnit } = usePreferences()
 const { t } = useI18n()
-const longestDisplay = computed(() => convertDistance(Number(props.longest), distanceUnit.value))
-const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
 </script>
 
 <template>
   <div class="disc-card">
     <div class="disc-card__top">
+      <SdDiscImage
+        :image-url="imageUrl"
+        :size="48"
+        radius="14px"
+        :alt="t('discs.photo.alt', { name })"
+      />
       <div class="disc-card__info">
         <div class="disc-card__name">{{ name }}</div>
         <div class="disc-card__uuid">{{ uuid }}</div>
@@ -56,20 +55,6 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
         </button>
       </div>
     </div>
-    <div class="disc-card__stats">
-      <div class="disc-card__stat">
-        <div class="disc-card__stat-v">{{ throws }}</div>
-        <div class="disc-card__stat-k">{{ t('discs.discCard.throws') }}</div>
-      </div>
-      <div class="disc-card__stat">
-        <div class="disc-card__stat-v">{{ longestDisplay }}<span class="disc-card__stat-u">{{ longestUnit }}</span></div>
-        <div class="disc-card__stat-k">{{ t('discs.discCard.longest') }}</div>
-      </div>
-      <div class="disc-card__stat">
-        <div class="disc-card__stat-v">{{ players }}</div>
-        <div class="disc-card__stat-k">{{ t('discs.discCard.players') }}</div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -96,23 +81,6 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
   display: flex;
   align-items: center;
   gap: 13px;
-}
-
-.disc-card__mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  flex: none;
-  background: linear-gradient(140deg, #1d3d72, #0a1c3d);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--sd-shadow-sm);
-}
-.disc-card__mark img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
 }
 
 .disc-card__info { flex: 1; min-width: 0; }
@@ -165,43 +133,10 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
   -webkit-tap-highlight-color: transparent;
 }
 .disc-card__fav:active { transform: scale(0.9); }
-.disc-card__fav:focus,
-.disc-card__fav:focus-visible {
+/* Pointer/touch focus leaves nothing behind; keyboard focus keeps the
+   global :focus-visible ring. */
+.disc-card__fav:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
-}
-
-.disc-card__stats {
-  display: flex;
-  gap: 18px;
-  border-top: 1px dashed rgba(16, 42, 87, .08);
-  padding-top: 12px;
-}
-
-.disc-card__stat { display: flex; flex-direction: column; gap: 2px; }
-
-.disc-card__stat-v {
-  font-family: var(--sd-font-display);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--sd-ink);
-  line-height: 1;
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.disc-card__stat-u {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--sd-fg3);
-}
-
-.disc-card__stat-k {
-  font-family: var(--sd-font-display);
-  font-size: 10.5px;
-  color: var(--sd-fg3);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 </style>

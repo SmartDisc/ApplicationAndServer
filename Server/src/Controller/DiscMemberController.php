@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Repository\DiscRepository;
 use App\Repository\UserRepository;
 use App\Serializer\DiscSerializer;
+use App\Serializer\UserAvatarPresenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,6 +27,7 @@ class DiscMemberController extends AbstractController
         #[CurrentUser] User $user,
         DiscRepository $discRepository,
         DiscSerializer $discSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
     ): JsonResponse {
         $disc = $discRepository->find($id);
 
@@ -35,7 +37,12 @@ class DiscMemberController extends AbstractController
             return $this->json(['error' => 'Disc not found.', 'code' => 'disc_not_found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(array_map($discSerializer->person(...), $disc->getSharedPeople()->toArray()));
+        $people = $disc->getSharedPeople()->toArray();
+
+        // One avatar-metadata query for the whole member list.
+        $userAvatarPresenter->preload($people);
+
+        return $this->json(array_map($discSerializer->person(...), $people));
     }
 
     #[Route('/{id}/people/{userId}', name: 'app_discs_people_remove', methods: ['DELETE'])]

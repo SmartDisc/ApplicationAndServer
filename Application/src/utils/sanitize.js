@@ -37,10 +37,13 @@ export function sanitizeEmail(value) {
 
 /**
  * Disc UUIDs — alphanumeric and hyphens only (RFC 4122 format).
+ * Lowercased: UUIDs are case-insensitive and stored lowercase, so normalising on
+ * every keystroke undoes a mobile keyboard's autocapitalize before submit.
  */
 export function sanitizeUUID(value) {
   return String(value)
     .replace(/[^A-Za-z0-9\-]/g, '')
+    .toLowerCase()
     .slice(0, 40)
 }
 

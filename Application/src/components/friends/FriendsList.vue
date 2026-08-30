@@ -54,7 +54,7 @@ async function handleRemove() {
         :title="f.name"
         :subtitle="f.email"
       >
-        <template #icon><SdAvatar :name="f.name" :size="38" /></template>
+        <template #icon><SdAvatar :name="f.name" :size="38" :has-image="!!f.hasAvatar" :image-url="f.avatarUrl" /></template>
         <template #trailing>
           <button class="icon-action icon-action--decline" @click="confirmRemove(f)">
             <UserMinus :size="16" />

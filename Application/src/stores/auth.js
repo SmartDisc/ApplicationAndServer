@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { Preferences } from '@capacitor/preferences'
 import { apiFetch, ApiError } from '@/services/api'
 import { isTokenExpired } from '@/utils/jwt'
+import { downscaleImage } from '@/utils/image'
 import { useI18n } from '@/i18n'
 
 // Capacitor Preferences persists per-app-sandbox (Keychain-backed UserDefaults on
@@ -10,6 +11,21 @@ import { useI18n } from '@/i18n'
 // readable by other apps either — the standard place to keep a short-lived
 // Bearer token for a Capacitor app. We deliberately never store the password.
 const TOKEN_KEY = 'sd_auth_token'
+
+// Avatars render at 34–52px and the server re-crops to 512 anyway, so 1024 is
+// already generous; this is only about not pushing a 5MB phone photo over
+// mobile data. The upload gets a longer leash than apiFetch's default 15s.
+const AVATAR_MAX_EDGE = 1024
+const AVATAR_UPLOAD_TIMEOUT_MS = 60000
+
+// downscaleImage hands back the untouched original when re-encoding wouldn't
+// save anything, so the extension is derived from the actual mime type rather
+// than assumed to be the WebP/JPEG the canvas would have produced.
+function avatarFileName(file) {
+  const subtype = (file.type || '').split('/')[1]
+  if (!subtype) return file.name || 'avatar.jpg'
+  return `avatar.${subtype === 'jpeg' ? 'jpg' : subtype}`
+}
 
 // Codes that don't map to a single user-facing sentence — a generic backend
 // `validation_failed` carries per-field messages that are more specific than any
@@ -178,6 +194,39 @@ export const useAuthStore = defineStore('auth', {
         token: this.token,
       })
       await this._clearSession()
+    },
+
+    /**
+     * Uploads the signed-in user's profile photo, replacing any existing one.
+     * The returned avatarUrl carries a `?v=` cache-buster, so storing it is
+     * what makes a replaced photo appear straight away.
+     */
+    async uploadAvatar(file) {
+      const optimized = await downscaleImage(file, { maxEdge: AVATAR_MAX_EDGE })
+      const form = new FormData()
+      form.append('image', optimized, avatarFileName(optimized))
+      const result = await apiFetch('/api/me/avatar', {
+        method: 'POST',
+        body: form,
+        token: this.token,
+        timeout: AVATAR_UPLOAD_TIMEOUT_MS,
+      })
+      if (this.user) {
+        this.user = {
+          ...this.user,
+          hasAvatar: result?.hasAvatar ?? true,
+          avatarUrl: result?.avatarUrl ?? null,
+        }
+      }
+      return result
+    },
+
+    /** Removes the signed-in user's profile photo. */
+    async deleteAvatar() {
+      await apiFetch('/api/me/avatar', { method: 'DELETE', token: this.token })
+      if (this.user) {
+        this.user = { ...this.user, hasAvatar: false, avatarUrl: null }
+      }
     },
 
     clearError() {

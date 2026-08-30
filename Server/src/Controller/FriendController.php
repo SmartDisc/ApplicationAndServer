@@ -8,6 +8,7 @@ use App\Repository\FriendshipRepository;
 use App\Repository\NotificationRepository;
 use App\Repository\UserRepository;
 use App\Serializer\FriendSerializer;
+use App\Serializer\UserAvatarPresenter;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,9 +25,21 @@ class FriendController extends AbstractController
     use JsonBodyTrait;
 
     #[Route(name: 'app_friends_list', methods: ['GET'])]
-    public function list(#[CurrentUser] User $user, FriendshipRepository $friendshipRepository, FriendSerializer $friendSerializer): JsonResponse
-    {
+    public function list(
+        #[CurrentUser] User $user,
+        FriendshipRepository $friendshipRepository,
+        FriendSerializer $friendSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
+    ): JsonResponse {
         $friendships = $friendshipRepository->findAcceptedFor($user);
+
+        // One query for every friend's avatar timestamp, instead of one per row
+        // once the serializer starts asking. Both sides go in because which of
+        // them is "the friend" depends on who sent the request.
+        $userAvatarPresenter->preload([
+            ...array_map(static fn (Friendship $friendship) => $friendship->getRequester(), $friendships),
+            ...array_map(static fn (Friendship $friendship) => $friendship->getAddressee(), $friendships),
+        ]);
 
         return $this->json(array_map(
             fn (Friendship $friendship) => $friendSerializer->friend($friendship, $user),
@@ -35,17 +48,35 @@ class FriendController extends AbstractController
     }
 
     #[Route('/requests', name: 'app_friends_requests_list', methods: ['GET'])]
-    public function requestsList(#[CurrentUser] User $user, FriendshipRepository $friendshipRepository, FriendSerializer $friendSerializer): JsonResponse
-    {
+    public function requestsList(
+        #[CurrentUser] User $user,
+        FriendshipRepository $friendshipRepository,
+        FriendSerializer $friendSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
+    ): JsonResponse {
         $friendships = $friendshipRepository->findPendingFor($user);
+
+        $userAvatarPresenter->preload(array_map(
+            static fn (Friendship $friendship) => $friendship->getRequester(),
+            $friendships,
+        ));
 
         return $this->json(array_map($friendSerializer->request(...), $friendships));
     }
 
     #[Route('/requests/sent', name: 'app_friends_requests_sent_list', methods: ['GET'])]
-    public function requestsSentList(#[CurrentUser] User $user, FriendshipRepository $friendshipRepository, FriendSerializer $friendSerializer): JsonResponse
-    {
+    public function requestsSentList(
+        #[CurrentUser] User $user,
+        FriendshipRepository $friendshipRepository,
+        FriendSerializer $friendSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
+    ): JsonResponse {
         $friendships = $friendshipRepository->findSentPendingFor($user);
+
+        $userAvatarPresenter->preload(array_map(
+            static fn (Friendship $friendship) => $friendship->getAddressee(),
+            $friendships,
+        ));
 
         return $this->json(array_map($friendSerializer->sentRequest(...), $friendships));
     }
@@ -162,6 +193,8 @@ class FriendController extends AbstractController
         #[CurrentUser] User $user,
         UserRepository $userRepository,
         FriendshipRepository $friendshipRepository,
+        FriendSerializer $friendSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
     ): JsonResponse {
         $q = trim((string) $request->query->get('q', ''));
 
@@ -172,11 +205,9 @@ class FriendController extends AbstractController
         $excludeIds = $friendshipRepository->findRelatedUserIds($user);
         $results = $userRepository->searchByEmailOrName($q, $excludeIds, 10);
 
-        return $this->json(array_map(static fn (User $found) => [
-            'id' => $found->getId(),
-            'name' => $found->getName(),
-            'email' => $found->getEmail(),
-        ], $results));
+        $userAvatarPresenter->preload($results);
+
+        return $this->json(array_map($friendSerializer->searchResult(...), $results));
     }
 
     #[Route('/{friendshipId}', name: 'app_friends_remove', methods: ['DELETE'], requirements: ['friendshipId' => '\d+'])]

@@ -49,7 +49,7 @@ async function handleDecline(id) {
         :title="r.fromName"
         :subtitle="r.fromEmail"
       >
-        <template #icon><SdAvatar :name="r.fromName" :size="38" /></template>
+        <template #icon><SdAvatar :name="r.fromName" :size="38" :has-image="!!r.fromHasAvatar" :image-url="r.fromAvatarUrl" /></template>
         <template #trailing>
           <div class="request-actions">
             <button

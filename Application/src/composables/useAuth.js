@@ -41,6 +41,14 @@ export function useAuth() {
     await store.deleteAccount(currentPassword)
   }
 
+  async function uploadAvatar(file) {
+    return store.uploadAvatar(file)
+  }
+
+  async function removeAvatar() {
+    await store.deleteAvatar()
+  }
+
   // ---------------------------------------------------------------------
   // Stubs — replace with real API calls once the server supports them.
   // ---------------------------------------------------------------------
@@ -94,6 +102,8 @@ export function useAuth() {
     signOut,
     changePassword,
     deleteAccount,
+    uploadAvatar,
+    removeAvatar,
     sendPasswordReset,
   }
 }

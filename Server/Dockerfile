@@ -22,9 +22,13 @@ RUN <<-EOF
 	apt-get install -y --no-install-recommends \
 		file \
 		git
+	# gd (built with WebP support) re-encodes uploaded disc images and exif
+	# reads the orientation flag off JPEGs before that re-encode strips it.
 	install-php-extensions \
 		@composer \
 		apcu \
+		exif \
+		gd \
 		intl \
 		opcache \
 		zip

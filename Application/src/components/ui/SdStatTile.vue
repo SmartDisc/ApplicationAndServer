@@ -4,16 +4,29 @@ defineProps({
   u:    { type: String, default: '' },
   k:    { type: String, required: true },
   dark: { type: Boolean, default: false },
+  // Renders the tile as a <button> so a @click listener becomes a real tap
+  // target; `active` marks the drilled-into tile.
+  interactive: { type: Boolean, default: false },
+  active:      { type: Boolean, default: false },
 })
 </script>
 
 <template>
-  <div :class="['stat-tile', { 'stat-tile--dark': dark }]">
+  <component
+    :is="interactive ? 'button' : 'div'"
+    :type="interactive ? 'button' : null"
+    :aria-expanded="interactive ? active : null"
+    :class="['stat-tile', {
+      'stat-tile--dark': dark,
+      'stat-tile--interactive': interactive,
+      'stat-tile--active': active,
+    }]"
+  >
     <div class="stat-tile__v">
       {{ v }}<span v-if="u" class="stat-tile__u">{{ u }}</span>
     </div>
     <div class="stat-tile__k">{{ k }}</div>
-  </div>
+  </component>
 </template>
 
 <style scoped>
@@ -31,6 +44,30 @@ defineProps({
 .stat-tile--dark {
   background: rgba(255, 255, 255, .06);
   border-color: rgba(255, 255, 255, .10);
+}
+
+.stat-tile--interactive {
+  font: inherit;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+          appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--sd-dur-fast) var(--sd-ease-out),
+              transform var(--sd-dur-fast) var(--sd-ease-out);
+}
+.stat-tile--interactive:active { transform: scale(0.97); }
+
+.stat-tile--active {
+  background: #fff;
+  border-color: var(--sd-glass-light-hi);
+  box-shadow: var(--sd-shadow-sm);
+}
+.stat-tile--dark.stat-tile--active {
+  background: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .22);
 }
 
 .stat-tile__v {

@@ -4,6 +4,7 @@ import {
   KeyRound, ChevronRight, AlertTriangle, LogOut,
   Ruler, Gauge, Languages,
   FileText, Lock, Info, ExternalLink,
+  Camera, ImagePlus, Trash2,
 } from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
@@ -15,16 +16,19 @@ import {
   SdCard,
   SdPageHeader,
   SdBtn,
-  SdOptionSheet
+  SdOptionSheet,
+  SdBottomSheet
 } from '@/components/ui'
 import ChangePasswordSheet from '@/components/settings/ChangePasswordSheet.vue'
 import DeleteAccountSheet from '@/components/settings/DeleteAccountSheet.vue'
 import SignOutSheet from '@/components/settings/SignOutSheet.vue'
 import {useAuth} from '@/composables/useAuth'
 import {usePreferences} from '@/composables/usePreferences'
+import {mapAuthError} from '@/stores/auth'
+import {ApiError} from '@/services/api'
 import {useI18n} from '@/i18n'
 
-const {user} = useAuth()
+const {user, uploadAvatar, removeAvatar} = useAuth()
 const {
   language, distanceUnit, speedUnit,
   saveLanguage, saveDistanceUnit, saveSpeedUnit,
@@ -36,6 +40,79 @@ const {t} = useI18n()
 const passwordSheet = ref(false)
 const deleteSheet = ref(false)
 const signOutSheet = ref(false)
+
+// ── Profile photo ───────────────────────────────────────────────────────────
+// @capacitor/camera is not a dependency, so the picker is a plain file input:
+// two of them, because `capture` on Android/iOS means "camera only" and would
+// take the photo library away. The library input carries no capture attribute.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+
+const avatarSheet = ref(false)
+const avatarBusy = ref(false)
+const avatarError = ref(null)
+const libraryInput = ref(null)
+const cameraInput = ref(null)
+
+function pickFromLibrary() {
+  avatarError.value = null
+  libraryInput.value?.click()
+}
+
+function takePhoto() {
+  avatarError.value = null
+  cameraInput.value?.click()
+}
+
+// The image endpoints answer 413/415 with codes the shared `errors.*` map does
+// not carry, so those two get a localized sentence here rather than falling
+// through to the server's English message (same treatment as the disc photo).
+function avatarErrorFor(err, fallbackKey) {
+  if (err?.status === 413) return t('settings.avatar.tooLarge')
+  if (err?.status === 415) return t('settings.avatar.unsupported')
+  if (!(err instanceof ApiError)) return t(fallbackKey)
+  return mapAuthError(err, t)
+}
+
+async function onAvatarPicked(e) {
+  const file = e.target.files?.[0]
+  // Reset first, or picking the same file twice fires no change event.
+  e.target.value = ''
+  if (!file || avatarBusy.value) return
+  // HEIC pickers sometimes report an empty type — only reject a type that is
+  // present and clearly not an image; the server has the final say.
+  if (file.type && !file.type.startsWith('image/')) {
+    avatarError.value = t('settings.avatar.unsupported')
+    return
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    avatarError.value = t('settings.avatar.tooLarge')
+    return
+  }
+  avatarBusy.value = true
+  avatarError.value = null
+  try {
+    await uploadAvatar(file)
+    avatarSheet.value = false
+  } catch (err) {
+    avatarError.value = avatarErrorFor(err, 'settings.avatar.uploadFailed')
+  } finally {
+    avatarBusy.value = false
+  }
+}
+
+async function deleteAvatar() {
+  if (avatarBusy.value) return
+  avatarBusy.value = true
+  avatarError.value = null
+  try {
+    await removeAvatar()
+    avatarSheet.value = false
+  } catch (err) {
+    avatarError.value = avatarErrorFor(err, 'settings.avatar.removeFailed')
+  } finally {
+    avatarBusy.value = false
+  }
+}
 
 // ── Appearance: unit + language sheets ─────────────────────────────────────
 const distanceSheet = ref(false)
@@ -80,7 +157,24 @@ function openWebsite() {
 
     <!-- Profile card -->
     <SdCard class="profile-card">
-      <SdAvatar :name="user?.name ?? 'User'" :size="52" :hue="210"/>
+      <button
+          type="button"
+          class="avatar-btn"
+          :aria-label="t('settings.avatar.change')"
+          :disabled="avatarBusy"
+          @click="avatarSheet = true"
+      >
+        <SdAvatar
+            :name="user?.name ?? 'User'"
+            :size="52"
+            :hue="210"
+            :has-image="!!user?.hasAvatar"
+            :image-url="user?.avatarUrl"
+        />
+        <span class="avatar-badge">
+          <Camera :size="11" :stroke-width="2"/>
+        </span>
+      </button>
       <div class="profile-info">
         <div class="profile-name">{{ user?.name ?? 'Alex Rivera' }}</div>
         <div class="profile-email">{{ user?.email ?? 'alex@smartdisc.io' }}</div>
@@ -207,6 +301,59 @@ function openWebsite() {
 
     <div :style="{ height: 'var(--sd-nav-clearance)' }"/>
 
+    <SdBottomSheet v-model="avatarSheet" :title="t('settings.avatar.sheetTitle')">
+      <p v-if="avatarError" class="avatar-error" role="alert">{{ avatarError }}</p>
+      <p v-else-if="avatarBusy" class="avatar-status" role="status">{{ t('settings.avatar.working') }}</p>
+      <div class="avatar-actions" :aria-busy="avatarBusy">
+        <SdBtn variant="primary" size="md" block :disabled="avatarBusy" @click="pickFromLibrary">
+          <template #icon-left>
+            <ImagePlus :size="16"/>
+          </template>
+          {{ t('settings.avatar.choosePhoto') }}
+        </SdBtn>
+        <SdBtn variant="ghost" size="md" block :disabled="avatarBusy" @click="takePhoto">
+          <template #icon-left>
+            <Camera :size="16"/>
+          </template>
+          {{ t('settings.avatar.takePhoto') }}
+        </SdBtn>
+        <SdBtn
+            v-if="user?.hasAvatar"
+            variant="ghost"
+            size="md"
+            block
+            class="avatar-remove-btn"
+            :disabled="avatarBusy"
+            @click="deleteAvatar"
+        >
+          <template #icon-left>
+            <Trash2 :size="16"/>
+          </template>
+          {{ t('settings.avatar.remove') }}
+        </SdBtn>
+      </div>
+    </SdBottomSheet>
+
+    <input
+        ref="libraryInput"
+        class="visually-hidden"
+        type="file"
+        accept="image/*"
+        tabindex="-1"
+        aria-hidden="true"
+        @change="onAvatarPicked"
+    />
+    <input
+        ref="cameraInput"
+        class="visually-hidden"
+        type="file"
+        accept="image/*"
+        capture="user"
+        tabindex="-1"
+        aria-hidden="true"
+        @change="onAvatarPicked"
+    />
+
     <ChangePasswordSheet v-model="passwordSheet"/>
     <DeleteAccountSheet v-model="deleteSheet"/>
     <SignOutSheet v-model="signOutSheet"/>
@@ -245,6 +392,78 @@ function openWebsite() {
   align-items: center;
   gap: 14px;
   margin-bottom: 14px;
+}
+
+.avatar-btn {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex: none;
+  border-radius: 999px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.avatar-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.avatar-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--sd-ink);
+  color: #fff;
+  border: 2px solid var(--sd-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* `display: none` on a file input makes some WebViews ignore the programmatic
+   .click() that opens the picker — hide it off-screen instead. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avatar-remove-btn {
+  color: var(--sd-danger) !important;
+  border-color: rgba(192, 88, 78, .30) !important;
+}
+
+.avatar-error,
+.avatar-status {
+  font-family: var(--sd-font-body);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.avatar-error {
+  color: var(--sd-danger);
+}
+
+.avatar-status {
+  color: var(--sd-fg3);
 }
 
 .profile-info {

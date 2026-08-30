@@ -38,7 +38,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch(path, { method = 'GET', body, token, signal } = {}) {
+export async function apiFetch(path, { method = 'GET', body, token, signal, timeout = TIMEOUT_MS } = {}) {
   if (!BASE_URL) {
     throw new ApiError(
       'API base URL is not configured. Set VITE_API_BASE_URL at build time.',
@@ -47,20 +47,24 @@ export async function apiFetch(path, { method = 'GET', body, token, signal } = {
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
   const onExternalAbort = () => controller.abort()
   if (signal) signal.addEventListener('abort', onExternalAbort)
+
+  // FormData has to keep the browser-generated multipart boundary, so the
+  // Content-Type header is left off entirely for those bodies.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
   let response
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         Accept: 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
       signal: controller.signal,
       credentials: 'omit',
     })
@@ -100,4 +104,61 @@ export async function apiFetch(path, { method = 'GET', body, token, signal } = {
   }
 
   return data
+}
+
+/**
+ * Same request pipeline as apiFetch, but resolves to a Blob — for endpoints
+ * that answer with raw bytes (disc images). A plain <img src> can't carry the
+ * Bearer token, so images are fetched here and bound as object URLs instead.
+ */
+export async function apiFetchBlob(path, { token, signal, timeout = TIMEOUT_MS } = {}) {
+  if (!BASE_URL) {
+    throw new ApiError(
+      'API base URL is not configured. Set VITE_API_BASE_URL at build time.',
+      { status: null, code: 'config_missing' },
+    )
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  const onExternalAbort = () => controller.abort()
+  if (signal) signal.addEventListener('abort', onExternalAbort)
+
+  let response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      headers: {
+        Accept: 'image/*',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      signal: controller.signal,
+      credentials: 'omit',
+    })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new ApiError('The request timed out. Please try again.', { status: null, code: 'timeout' })
+    }
+    throw new ApiError('Could not reach the server. Check your connection and try again.', { status: null, code: 'network_error' })
+  } finally {
+    clearTimeout(timeoutId)
+    if (signal) signal.removeEventListener('abort', onExternalAbort)
+  }
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type') || ''
+    const data = contentType.includes('application/json')
+      ? await response.json().catch(() => null)
+      : null
+
+    if (response.status === 401 && data?.code === 'unauthenticated') {
+      unauthorizedHandler?.()
+    }
+
+    throw new ApiError(data?.message ?? data?.error ?? `Request failed (${response.status}).`, {
+      status: response.status,
+      code: data?.code ?? null,
+    })
+  }
+
+  return response.blob()
 }

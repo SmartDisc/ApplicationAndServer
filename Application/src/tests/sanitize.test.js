@@ -49,10 +49,13 @@ describe('sanitizeEmail', () => {
 
 describe('sanitizeUUID', () => {
   it('preserves a valid UUID format', () => {
-    expect(sanitizeUUID('SD-1A2B-3C4D-5E6F')).toBe('SD-1A2B-3C4D-5E6F')
+    expect(sanitizeUUID('SD-1A2B-3C4D-5E6F')).toBe('sd-1a2b-3c4d-5e6f')
+  })
+  it('lowercases mixed-case input (mobile autocapitalize must not break the lookup)', () => {
+    expect(sanitizeUUID('AbC12345-Def6')).toBe('abc12345-def6')
   })
   it('strips spaces and special characters', () => {
-    expect(sanitizeUUID('SD 1A2B!3C4D')).toBe('SD1A2B3C4D')
+    expect(sanitizeUUID('SD 1A2B!3C4D')).toBe('sd1a2b3c4d')
   })
   it('truncates to 40 characters', () => {
     const long = 'A'.repeat(50)

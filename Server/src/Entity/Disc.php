@@ -25,10 +25,12 @@ class Disc
     #[ORM\Column(length: 255)]
     private string $password;
 
+    // ManyToOne, not OneToOne: a user owns a *list* of discs (see
+    // DiscController::list()), so the owner_id column must not be unique.
     // Deleting a disc must never take its owner's account down with it, and
     // deleting a user must orphan their discs (so they can be re-claimed)
     // rather than fail outright — hence no remove cascade and SET NULL.
-    #[ORM\OneToOne(cascade: ['persist'])]
+    #[ORM\ManyToOne]
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $owner = null;
 

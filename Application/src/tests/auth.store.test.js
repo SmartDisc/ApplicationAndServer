@@ -26,6 +26,13 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }))
 
+// happy-dom has no image decoder or canvas encoder, so the real downscale
+// would stall on an <img> that never loads. The store's contract with it is
+// just "file in, file out"; the resizing itself is not what these tests check.
+vi.mock('@/utils/image', () => ({
+  downscaleImage: vi.fn(async (file) => file),
+}))
+
 import { apiFetch, ApiError } from '@/services/api'
 import { Preferences } from '@capacitor/preferences'
 import { useAuthStore } from '../stores/auth.js'
@@ -316,5 +323,82 @@ describe('auth store — clearError', () => {
     store.clearError()
 
     expect(store.error).toBeNull()
+  })
+})
+
+describe('auth store — profile photo', () => {
+  const PHOTO = () => new File(['bytes'], 'photo.jpg', { type: 'image/jpeg' })
+
+  async function signedInStore() {
+    apiFetch.mockResolvedValueOnce({ token: VALID_TOKEN }).mockResolvedValueOnce({
+      ...ME,
+      hasAvatar: false,
+      avatarUrl: null,
+    })
+    const store = useAuthStore()
+    await store.signIn('a@b.com', 'Correct1!')
+    apiFetch.mockReset()
+    return store
+  }
+
+  it('posts the photo as multipart FormData under the "image" field', async () => {
+    const store = await signedInStore()
+    apiFetch.mockResolvedValue({ hasAvatar: true, avatarUrl: '/api/users/1/avatar?v=100' })
+
+    await store.uploadAvatar(PHOTO())
+
+    const [path, options] = apiFetch.mock.calls[0]
+    expect(path).toBe('/api/me/avatar')
+    expect(options.method).toBe('POST')
+    expect(options.token).toBe(VALID_TOKEN)
+    expect(options.body).toBeInstanceOf(FormData)
+    expect(options.body.get('image')).toBeInstanceOf(File)
+    // Uploading a photo over mobile data outlives apiFetch's default 15s.
+    expect(options.timeout).toBeGreaterThan(15000)
+  })
+
+  it('stores the returned avatarUrl so a replaced photo shows without a reload', async () => {
+    const store = await signedInStore()
+    apiFetch.mockResolvedValueOnce({ hasAvatar: true, avatarUrl: '/api/users/1/avatar?v=100' })
+
+    await store.uploadAvatar(PHOTO())
+
+    expect(store.user.hasAvatar).toBe(true)
+    expect(store.user.avatarUrl).toBe('/api/users/1/avatar?v=100')
+    expect(store.user.email).toBe(ME.email)
+
+    // A second upload only differs by the ?v= cache buster; the store has to
+    // take the new URL or the client keeps rendering the cached blob.
+    apiFetch.mockResolvedValueOnce({ hasAvatar: true, avatarUrl: '/api/users/1/avatar?v=200' })
+    await store.uploadAvatar(PHOTO())
+
+    expect(store.user.avatarUrl).toBe('/api/users/1/avatar?v=200')
+  })
+
+  it('leaves the session intact when the upload is rejected', async () => {
+    const store = await signedInStore()
+    apiFetch.mockRejectedValue(new ApiError('The image must be at most 15 MB.', { status: 413 }))
+
+    await expect(store.uploadAvatar(PHOTO())).rejects.toMatchObject({ status: 413 })
+
+    expect(store.isAuthenticated).toBe(true)
+    expect(store.user.hasAvatar).toBe(false)
+  })
+
+  it('clears hasAvatar and avatarUrl on delete', async () => {
+    const store = await signedInStore()
+    apiFetch.mockResolvedValueOnce({ hasAvatar: true, avatarUrl: '/api/users/1/avatar?v=100' })
+    await store.uploadAvatar(PHOTO())
+
+    apiFetch.mockResolvedValueOnce(null)
+    await store.deleteAvatar()
+
+    expect(apiFetch).toHaveBeenLastCalledWith('/api/me/avatar', {
+      method: 'DELETE',
+      token: VALID_TOKEN,
+    })
+    expect(store.user.hasAvatar).toBe(false)
+    expect(store.user.avatarUrl).toBeNull()
+    expect(store.isAuthenticated).toBe(true)
   })
 })

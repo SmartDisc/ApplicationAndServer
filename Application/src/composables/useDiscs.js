@@ -2,6 +2,11 @@ import { ref, readonly } from 'vue'
 import { apiFetch } from '@/services/api'
 import { useAuthStore, mapAuthError } from '@/stores/auth'
 import { useI18n } from '@/i18n'
+import { downscaleImage } from '@/utils/image'
+
+// Photo uploads run over mobile data far more often than the JSON calls do,
+// so they get a longer leash than apiFetch's default 15s.
+const UPLOAD_TIMEOUT_MS = 60000
 
 // Throw `time` is stored as a day key + clock time rather than a baked-in
 // formatted string, so views can translate the day label at render time.
@@ -26,6 +31,8 @@ function mapDisc(disc) {
     fav: false,
     lastActive: null,
     throws_list: [],
+    hasImage: disc.hasImage ?? false,
+    imageUrl: disc.imageUrl ?? null,
   }
 }
 
@@ -41,11 +48,17 @@ function mapSharedDisc(disc) {
     name: disc.name,
     uuid: disc.id,
     owner: disc.ownerName || disc.ownerEmail || '',
+    // sharedDisc() flattens the owner inline, so their avatar fields are
+    // prefixed rather than the plain hasAvatar/avatarUrl used elsewhere.
+    ownerHasAvatar: disc.ownerHasAvatar ?? false,
+    ownerAvatarUrl: disc.ownerAvatarUrl ?? null,
     throws: 0,
     longest: 0,
     topRpm: 0,
     players: 1 + (disc.sharedCount ?? 0),
     throws_list: [],
+    hasImage: disc.hasImage ?? false,
+    imageUrl: disc.imageUrl ?? null,
   }
 }
 
@@ -108,6 +121,39 @@ export function useDiscs() {
     return updated
   }
 
+  /**
+   * Uploads a photo for an owned disc, replacing any existing one. The file is
+   * downscaled first — see utils/image.js; the server re-encodes regardless.
+   * The returned imageUrl carries a `?v=` cache-buster, so simply storing it
+   * is what makes a replaced photo appear straight away.
+   */
+  async function uploadDiscImage(id, file) {
+    const optimized = await downscaleImage(file)
+    const form = new FormData()
+    form.append('image', optimized, optimized.name || 'disc-image.jpg')
+    const result = await apiFetch(`/api/discs/${id}/image`, {
+      method: 'POST',
+      body: form,
+      token: authStore.token,
+      timeout: UPLOAD_TIMEOUT_MS,
+    })
+    _discs.value = _discs.value.map(d => (
+      d.id === id ? { ...d, hasImage: result.hasImage ?? true, imageUrl: result.imageUrl ?? null } : d
+    ))
+    return result
+  }
+
+  /** Removes an owned disc's photo on the backend and in the local list. */
+  async function deleteDiscImage(id) {
+    await apiFetch(`/api/discs/${id}/image`, {
+      method: 'DELETE',
+      token: authStore.token,
+    })
+    _discs.value = _discs.value.map(d => (
+      d.id === id ? { ...d, hasImage: false, imageUrl: null } : d
+    ))
+  }
+
   /** Loads the discs that were shared with the signed-in user. */
   async function fetchSharedDiscs() {
     _sharedDiscsLoading.value = true
@@ -135,6 +181,8 @@ export function useDiscs() {
     fetchDiscs,
     claimDisc,
     renameDisc,
+    uploadDiscImage,
+    deleteDiscImage,
     fetchSharedDiscs,
   }
 }

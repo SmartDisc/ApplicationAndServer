@@ -6,6 +6,7 @@ use App\Entity\Disc;
 use App\Entity\User;
 use App\Repository\DiscRepository;
 use App\Serializer\DiscSerializer;
+use App\Serializer\UserAvatarPresenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,17 +31,33 @@ class DiscController extends AbstractController
     {
         $discs = $discRepository->findBy(['owner' => $user]);
 
-        return $this->json(array_map($discSerializer->disc(...), $discs));
+        // One image-metadata query for the whole list rather than one per disc.
+        $imageUpdatedAt = $discSerializer->prefetchImageUpdatedAt($discs);
+
+        return $this->json(array_map(static fn (Disc $disc) => $discSerializer->disc($disc, $imageUpdatedAt), $discs));
     }
 
     #[Route('/shared', name: 'app_discs_shared', methods: ['GET'])]
-    public function shared(#[CurrentUser] User $user, DiscSerializer $discSerializer): JsonResponse
-    {
+    public function shared(
+        #[CurrentUser] User $user,
+        DiscRepository $discRepository,
+        DiscSerializer $discSerializer,
+        UserAvatarPresenter $userAvatarPresenter,
+    ): JsonResponse {
         // The inverse side of Disc::$sharedPeople — every disc someone else
-        // owns but has shared access with this user.
-        $discs = $user->getDiscs()->toArray();
+        // owns but has shared access with this user. Read through the
+        // repository rather than $user->getDiscs() so the owner comes back
+        // joined in; the payload shows the owner's name, email and avatar, and
+        // a lazy owner would cost a query per disc.
+        $discs = $discRepository->findSharedWith($user);
 
-        return $this->json(array_map($discSerializer->sharedDisc(...), $discs));
+        // One image-metadata query for the whole list rather than one per disc.
+        $imageUpdatedAt = $discSerializer->prefetchImageUpdatedAt($discs);
+
+        // Likewise one avatar-metadata query for every owner in the list.
+        $userAvatarPresenter->preload(array_map(static fn (Disc $disc) => $disc->getOwner(), $discs));
+
+        return $this->json(array_map(static fn (Disc $disc) => $discSerializer->sharedDisc($disc, $imageUpdatedAt), $discs));
     }
 
     #[Route('/{id}', name: 'app_discs_rename', methods: ['PATCH'])]
@@ -97,7 +114,10 @@ class DiscController extends AbstractController
             return $this->json(['error' => 'id and password are required strings.', 'code' => 'missing_required_fields'], Response::HTTP_BAD_REQUEST);
         }
 
-        $disc = $discRepository->find(trim($data['id']));
+        // UUIDs are case-insensitive per RFC 4122 and every stored id is lowercase
+        // canonical, so lowercase the input — a phone's autocapitalize must not
+        // turn a valid UUID into "invalid credentials". Passwords stay case-sensitive.
+        $disc = $discRepository->find(mb_strtolower(trim($data['id'])));
         $passwordValid = password_verify($data['password'], $disc?->getPassword() ?? self::DUMMY_HASH);
 
         if (!$disc instanceof Disc || !$passwordValid) {

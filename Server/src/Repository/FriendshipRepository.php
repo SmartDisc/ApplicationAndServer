@@ -38,7 +38,13 @@ class FriendshipRepository extends ServiceEntityRepository
      */
     public function findAcceptedFor(User $user): array
     {
+        // The serialised shape reads the other party's name, email and avatar,
+        // so join both sides in rather than letting each row lazily load its
+        // own user.
         return $this->createQueryBuilder('f')
+            ->addSelect('requester', 'addressee')
+            ->join('f.requester', 'requester')
+            ->join('f.addressee', 'addressee')
             ->andWhere('f.status = :status')
             ->andWhere('f.requester = :user OR f.addressee = :user')
             ->setParameter('status', 'accepted')
@@ -53,6 +59,8 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findPendingFor(User $addressee): array
     {
         return $this->createQueryBuilder('f')
+            ->addSelect('requester')
+            ->join('f.requester', 'requester')
             ->andWhere('f.addressee = :addressee')
             ->andWhere('f.status = :status')
             ->setParameter('addressee', $addressee)
@@ -68,6 +76,8 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findSentPendingFor(User $requester): array
     {
         return $this->createQueryBuilder('f')
+            ->addSelect('addressee')
+            ->join('f.addressee', 'addressee')
             ->andWhere('f.requester = :requester')
             ->andWhere('f.status = :status')
             ->setParameter('requester', $requester)

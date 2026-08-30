@@ -6,6 +6,7 @@ use App\Entity\DiscInvitation;
 use App\Entity\User;
 use App\Repository\DiscInvitationRepository;
 use App\Repository\NotificationRepository;
+use App\Serializer\UserAvatarPresenter;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,11 +19,23 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 class DiscInvitationController extends AbstractController
 {
     #[Route(name: 'app_disc_invitations_list', methods: ['GET'])]
-    public function list(#[CurrentUser] User $user, DiscInvitationRepository $discInvitationRepository): JsonResponse
-    {
+    public function list(
+        #[CurrentUser] User $user,
+        DiscInvitationRepository $discInvitationRepository,
+        UserAvatarPresenter $userAvatarPresenter,
+    ): JsonResponse {
         $invitations = $discInvitationRepository->findPendingFor($user);
 
-        return $this->json(array_map($this->serializeInvitation(...), $invitations));
+        // One avatar-metadata query for the whole list rather than one per row.
+        $userAvatarPresenter->preload(array_map(
+            static fn (DiscInvitation $invitation) => $invitation->getFromUser(),
+            $invitations,
+        ));
+
+        return $this->json(array_map(
+            fn (DiscInvitation $invitation) => $this->serializeInvitation($invitation, $userAvatarPresenter),
+            $invitations,
+        ));
     }
 
     #[Route('/{id}/accept', name: 'app_disc_invitations_accept', methods: ['POST'])]
@@ -88,7 +101,7 @@ class DiscInvitationController extends AbstractController
             && 'pending' === $invitation->getStatus();
     }
 
-    private function serializeInvitation(DiscInvitation $invitation): array
+    private function serializeInvitation(DiscInvitation $invitation, UserAvatarPresenter $userAvatarPresenter): array
     {
         $disc = $invitation->getDisc();
         $from = $invitation->getFromUser();
@@ -99,6 +112,8 @@ class DiscInvitationController extends AbstractController
             'discName' => $disc?->getName(),
             'fromName' => $from?->getName(),
             'fromEmail' => $from?->getEmail(),
+            // Prefixed to match the fromName/fromEmail keys beside them.
+            ...$userAvatarPresenter->fields($from, 'from'),
             'createdAt' => $invitation->getCreatedAt()->format(DATE_ATOM),
         ];
     }

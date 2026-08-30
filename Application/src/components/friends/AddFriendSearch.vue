@@ -69,7 +69,7 @@ async function handleSendRequest(user) {
 
     <div v-if="searchResults.length" class="search-results">
       <div v-for="u in searchResults" :key="u.id" class="search-result-row">
-        <SdAvatar :name="u.name" :size="34" />
+        <SdAvatar :name="u.name" :size="34" :has-image="!!u.hasAvatar" :image-url="u.avatarUrl" />
         <div class="search-result-info">
           <div class="search-result-name">{{ u.name }}</div>
           <div class="search-result-email">{{ u.email }}</div>

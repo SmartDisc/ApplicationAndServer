@@ -57,13 +57,43 @@ body {
   display: none; /* Chrome, Safari, newer Edge */
 }
 
-/* Remove tap highlight on all interactive elements */
-a, button, [role="button"], input, select, textarea {
+/* Remove the WebView tap highlight everywhere.
+   `-webkit-tap-highlight-color` is an inherited property, so declaring it on
+   the root covers *every* element — including the plain `<div @click>` rows
+   and cards that the old `a, button, input…` element list never matched. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Re-declared on the form controls some UA stylesheets reset it on. */
+a, button, [role="button"], input, select, textarea, label,
+.sd-tappable, .clickable {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Things meant to be tapped: no long-press callout or text selection.
+   Text inputs are deliberately left selectable. */
+a, button, [role="button"], .sd-tappable, .clickable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Prevent double-tap zoom, keep touch responsiveness */
-button, a {
+a, button, [role="button"], select, .sd-tappable, .clickable {
   touch-action: manipulation;
+}
+
+/* Pointer and touch focus must not leave a ring behind — that grey/blue box
+   lingering after a tap is the UA focus outline, not the tap highlight.
+   Keyboard focus keeps a visible ring. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--sd-azure);
+  outline-offset: 2px;
 }
 </style>

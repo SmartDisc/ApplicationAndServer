@@ -64,9 +64,7 @@ onMounted(() => {
           :key="disc.id"
           :name="disc.name"
           :uuid="`from ${disc.owner} · ${disc.uuid.slice(0, 11)}–`"
-          :throws="disc.throws"
-          :longest="disc.longest"
-          :players="disc.players"
+          :image-url="disc.imageUrl"
           :shared="true"
           @click="router.push(`/shared/${disc.id}`)"
       />

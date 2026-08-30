@@ -2,3 +2,8 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
+    # 30 days — was the bundle's 3600s (1h) default, which signed a mobile app's
+    # users out every hour. There is no refresh-token or revocation mechanism
+    # here, so a leaked token stays valid for the full 30 days; that trade-off
+    # is deliberate for this app rather than an oversight.
+    token_ttl: 2592000

@@ -6,6 +6,7 @@ use App\Dto\ChangePasswordRequest;
 use App\Dto\RegistrationRequest;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Serializer\UserAvatarPresenter;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -94,13 +95,14 @@ class UserController extends AbstractController
     }
 
     #[Route('/me', name: 'app_me', methods: ['GET'])]
-    public function me(#[CurrentUser] User $user): JsonResponse
+    public function me(#[CurrentUser] User $user, UserAvatarPresenter $userAvatarPresenter): JsonResponse
     {
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
             'name' => $user->getName(),
             'roles' => $user->getRoles(),
+            ...$userAvatarPresenter->fields($user),
         ]);
     }
 
