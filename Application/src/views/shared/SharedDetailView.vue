@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MoreHorizontal, Eye } from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -10,7 +10,7 @@ import SdDiscImage from '@/components/discs/SdDiscImage.vue'
 import SdAvatar from '@/components/ui/SdAvatar.vue'
 import { SdChip, SdCard, SdIconBtn, SdSectionLabel } from '@/components/ui'
 import { useDiscs } from '@/composables/useDiscs'
-import { formatThrowTime } from '@/composables/useThrows'
+import { useThrows, formatThrowTime } from '@/composables/useThrows'
 import { usePreferences } from '@/composables/usePreferences'
 import { useI18n } from '@/i18n'
 import { convertDistance, distanceUnitLabel } from '@/utils/units'
@@ -18,11 +18,25 @@ import { convertDistance, distanceUnitLabel } from '@/utils/units'
 const route  = useRoute()
 const router = useRouter()
 const { getSharedDisc } = useDiscs()
+const { getThrows, fetchThrows } = useThrows()
 const { distanceUnit } = usePreferences()
 const { t } = useI18n()
 const disc = computed(() => getSharedDisc(route.params.id))
+const throws = computed(() => getThrows(route.params.id))
+const topRpm = computed(() => {
+  const rpms = throws.value.map(th => th.rpm).filter(rpm => rpm != null)
+  return rpms.length ? Math.max(...rpms) : 0
+})
+// There's no distance data anywhere in this app yet, even for owned discs —
+// stays at the disc's hardcoded 0 until that lands.
 const longest = computed(() => convertDistance(disc.value?.longest ?? 0, distanceUnit.value))
 const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
+
+onMounted(() => {
+  fetchThrows(route.params.id).catch(() => {
+    // throws just stays empty if this fails; template falls back to placeholders
+  })
+})
 </script>
 
 <template>
@@ -57,21 +71,21 @@ const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
         </SdChip>
       </div>
       <div class="stat-row">
-        <SdStatTile :v="disc.throws" :k="t('shared.detail.throws')" />
+        <SdStatTile :v="throws.length" :k="t('shared.detail.throws')" />
         <SdStatTile :v="longest" :u="longestUnit" :k="t('shared.detail.longest')" />
-        <SdStatTile :v="disc.topRpm" :k="t('shared.detail.topRpm')" />
+        <SdStatTile :v="topRpm" :k="t('shared.detail.topRpm')" />
       </div>
     </SdCard>
 
     <!-- Throws -->
     <div class="section-header">
       <SdSectionLabel style="flex: 1; margin: 0;">{{ t('shared.detail.recentThrows') }}</SdSectionLabel>
-      <span class="count">{{ disc?.throws }} {{ t('shared.detail.totalSuffix') }}</span>
+      <span class="count">{{ throws.length }} {{ t('shared.detail.totalSuffix') }}</span>
     </div>
 
     <div class="throws-list">
       <SdThrowRow
-        v-for="thr in disc?.throws_list ?? []"
+        v-for="thr in throws"
         :key="thr.id"
         :name="thr.name"
         :time="formatThrowTime(t, thr)"

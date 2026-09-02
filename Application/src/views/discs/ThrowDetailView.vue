@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowChart from '@/components/discs/SdThrowChart.vue'
+import SdFlightPathChart from '@/components/discs/SdFlightPathChart.vue'
 import { SdBtn, SdChip, SdIconBtn, SdBottomSheet, SdField } from '@/components/ui'
 import { Pencil, MoreHorizontal, Share2, Home, Trash2, AlertTriangle } from 'lucide-vue-next'
 import { useDiscs } from '@/composables/useDiscs'
@@ -19,6 +20,7 @@ const { getThrows, fetchThrows, renameThrow, deleteThrow } = useThrows()
 const { t } = useI18n()
 
 const cameFromRecording = computed(() => route.query.justRecorded === '1')
+const isReadOnly = computed(() => route.name === 'shared-throw-detail')
 const disc = computed(() => getDisc(route.params.id))
 const throw_ = computed(() =>
   getThrows(route.params.id).find(th => String(th.id) === String(route.params.throwId)) ?? null
@@ -110,7 +112,7 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
           <h1 class="throw-title">
             {{ throw_?.name ?? t('discs.throwDetail.defaultName') }}
           </h1>
-          <button type="button" class="throw-edit" @click="openRenameSheet">
+          <button v-if="!isReadOnly" type="button" class="throw-edit" @click="openRenameSheet">
             <Pencil :size="14" :stroke-width="1.75" style="color: var(--sd-fg2-on-dark);" />
           </button>
         </div>
@@ -159,8 +161,11 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
       </div>
 
       <div v-if="throw_?.series?.length" class="throw-charts">
-        <SdThrowChart :series="throw_.series" metric="rpm" :title="t('discs.throwDetail.spinChart')" />
-        <SdThrowChart :series="throw_.series" metric="alt" :title="t('discs.throwDetail.altitudeChart')" />
+        <SdFlightPathChart :series="throw_.series" :duration-ms="throw_.durationMs" />
+        <div class="throw-charts__pair">
+          <SdThrowChart :series="throw_.series" metric="rpm" :title="t('discs.throwDetail.spinChart')" />
+          <SdThrowChart :series="throw_.series" metric="alt" :title="t('discs.throwDetail.altitudeChart')" />
+        </div>
       </div>
 
       <div class="throw-meta">
@@ -174,14 +179,14 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
           <template #icon-left><Share2 :size="16" :stroke-width="1.75" /></template>
           {{ t('discs.throwDetail.share') }}
         </SdBtn>
-        <SdBtn variant="dark-glass" size="md" class="delete-trigger-btn" @click="openDeleteSheet">
+        <SdBtn v-if="!isReadOnly" variant="dark-glass" size="md" class="delete-trigger-btn" @click="openDeleteSheet">
           <template #icon-left><Trash2 :size="16" :stroke-width="1.75" /></template>
           {{ t('discs.throwDetail.delete') }}
         </SdBtn>
       </div>
 
       <!-- Delete sheet -->
-      <SdBottomSheet v-model="deleteSheet" :title="t('discs.throwDetail.deleteSheetTitle')">
+      <SdBottomSheet v-if="!isReadOnly" v-model="deleteSheet" :title="t('discs.throwDetail.deleteSheetTitle')">
         <div class="delete-stack">
           <div class="delete-header">
             <div class="delete-header__icon">
@@ -386,11 +391,17 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
   margin-bottom: 14px;
 }
 
+.throw-charts__pair {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @media (min-width: 768px) {
-  .throw-charts {
+  .throw-charts__pair {
     flex-direction: row;
   }
-  .throw-charts > * {
+  .throw-charts__pair > * {
     flex: 1;
     min-width: 0;
   }

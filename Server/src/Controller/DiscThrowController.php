@@ -51,7 +51,7 @@ class DiscThrowController extends AbstractController
         EntityManagerInterface $entityManager,
         DiscThrowSerializer $discThrowSerializer,
     ): JsonResponse {
-        $disc = $this->resolveAccessibleDisc($id, $user, $discRepository);
+        $disc = $this->resolveOwnedDisc($id, $user, $discRepository);
         if (!$disc instanceof Disc) {
             return $this->discNotFound();
         }
@@ -122,7 +122,7 @@ class DiscThrowController extends AbstractController
         EntityManagerInterface $entityManager,
         DiscThrowSerializer $discThrowSerializer,
     ): JsonResponse {
-        $disc = $this->resolveAccessibleDisc($id, $user, $discRepository);
+        $disc = $this->resolveOwnedDisc($id, $user, $discRepository);
         if (!$disc instanceof Disc) {
             return $this->discNotFound();
         }
@@ -177,7 +177,7 @@ class DiscThrowController extends AbstractController
         DiscThrowRepository $throwRepository,
         EntityManagerInterface $entityManager,
     ): JsonResponse {
-        $disc = $this->resolveAccessibleDisc($id, $user, $discRepository);
+        $disc = $this->resolveOwnedDisc($id, $user, $discRepository);
         if (!$disc instanceof Disc) {
             return $this->discNotFound();
         }
@@ -195,7 +195,9 @@ class DiscThrowController extends AbstractController
 
     // 404 (rather than 403) whether the disc doesn't exist, belongs to someone
     // else, or isn't shared with this user, so this endpoint can't be used to
-    // probe disc ownership/sharing — mirrors DiscController::rename().
+    // probe disc ownership/sharing — mirrors DiscController::rename(). Read-only:
+    // used by list() only. Writes go through resolveOwnedDisc() below — sharing
+    // grants read access, never write.
     private function resolveAccessibleDisc(string $id, User $user, DiscRepository $discRepository): ?Disc
     {
         $disc = $discRepository->find($id);
@@ -207,6 +209,16 @@ class DiscThrowController extends AbstractController
         $isShared = $disc->getSharedPeople()->contains($user);
 
         return ($isOwner || $isShared) ? $disc : null;
+    }
+
+    // Write access is narrower than read access: the owner only — mirrors
+    // DiscImageController::resolveOwnedDisc(). A person a disc is shared with
+    // can view its throws but never create, rename, favorite or delete one.
+    private function resolveOwnedDisc(string $id, User $user, DiscRepository $discRepository): ?Disc
+    {
+        $disc = $discRepository->find($id);
+
+        return $disc instanceof Disc && $disc->getOwner()?->getId() === $user->getId() ? $disc : null;
     }
 
     private function discNotFound(): JsonResponse

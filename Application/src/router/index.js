@@ -57,6 +57,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/discs/:id/paired',
+    name: 'disc-paired',
+    component: () => import('@/views/discs/DiscPairedView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/discs/:id',
     component: () => import('@/views/discs/DiscDetailView.vue'),
     meta: { requiresAuth: true },
@@ -109,6 +115,12 @@ const routes = [
   },
 
   // ── Global screens ─────────────────────────────────────────────────────
+  {
+    path: '/onboarding',
+    name: 'onboarding',
+    component: () => import('@/views/OnboardingView.vue'),
+    meta: { requiresAuth: true },
+  },
   {
     path: '/notifications',
     name: 'notifications',

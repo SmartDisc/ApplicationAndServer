@@ -23,8 +23,8 @@ async function handlePairDisc() {
   pairing.value = true
   pairError.value = ''
   try {
-    await claimDisc(uuid.value, password.value)
-    router.push('/discs')
+    const claimedDisc = await claimDisc(uuid.value, password.value)
+    router.push(`/discs/${claimedDisc.id}/paired`)
   } catch (err) {
     pairError.value = mapAuthError(err, t)
   } finally {
