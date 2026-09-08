@@ -5,14 +5,17 @@ import {
 } from '../utils/units.js'
 
 describe('convertSpeed', () => {
-  it('passes km/h through unchanged', () => {
-    expect(convertSpeed(28, 'km/h')).toBe(28)
+  it('converts km/h to m/s', () => {
+    expect(convertSpeed(36, 'm/s')).toBe(10)
   })
-  it('converts km/h to mph', () => {
-    expect(convertSpeed(100, 'mph')).toBe(62)
+  it('rounds m/s to requested digits', () => {
+    expect(convertSpeed(1, 'm/s', 3)).toBeCloseTo(0.278, 3)
   })
-  it('rounds to requested digits', () => {
-    expect(convertSpeed(100, 'mph', 2)).toBe(62.14)
+  it('converts km/h to ft/s', () => {
+    expect(convertSpeed(36, 'ft/s')).toBe(33)
+  })
+  it('rounds ft/s to requested digits', () => {
+    expect(convertSpeed(36, 'ft/s', 2)).toBeCloseTo(32.81, 2)
   })
 })
 
@@ -30,8 +33,8 @@ describe('convertDistance', () => {
 
 describe('unit labels', () => {
   it('speedUnitLabel', () => {
-    expect(speedUnitLabel('km/h')).toBe('km/h')
-    expect(speedUnitLabel('mph')).toBe('mph')
+    expect(speedUnitLabel('m/s')).toBe('m/s')
+    expect(speedUnitLabel('ft/s')).toBe('ft/s')
   })
   it('distanceUnitLabel', () => {
     expect(distanceUnitLabel('m')).toBe('m')
@@ -41,8 +44,8 @@ describe('unit labels', () => {
 
 describe('formatSpeed / formatDistance', () => {
   it('formats speed with unit suffix', () => {
-    expect(formatSpeed(28, 'km/h')).toBe('28 km/h')
-    expect(formatSpeed(28, 'mph')).toBe('17 mph')
+    expect(formatSpeed(36, 'm/s')).toBe('10 m/s')
+    expect(formatSpeed(36, 'ft/s')).toBe('33 ft/s')
   })
   it('formats distance with unit suffix', () => {
     expect(formatDistance(41, 'm')).toBe('41 m')

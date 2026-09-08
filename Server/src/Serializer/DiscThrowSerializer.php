@@ -24,7 +24,7 @@ class DiscThrowSerializer
             'maxRpm' => $throw->getMaxRpm(),
             'maxAltM' => $throw->getMaxAltM(),
             'maxAccelMagnitude' => $throw->getMaxAccelMagnitude(),
-            'avgTempC' => $throw->getAvgTempC(),
+            'maxSpeedKmh' => $throw->getMaxSpeedKmh(),
             'series' => $throw->getSeries(),
             'sampleCount' => $throw->getSampleCount(),
             'isFavorite' => $throw->isFavorite(),

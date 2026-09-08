@@ -45,7 +45,7 @@ class DiscThrow
     private ?float $maxAccelMagnitude = null;
 
     #[ORM\Column(nullable: true)]
-    private ?float $avgTempC = null;
+    private ?float $maxSpeedKmh = null;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $series = null;
@@ -160,14 +160,14 @@ class DiscThrow
         return $this;
     }
 
-    public function getAvgTempC(): ?float
+    public function getMaxSpeedKmh(): ?float
     {
-        return $this->avgTempC;
+        return $this->maxSpeedKmh;
     }
 
-    public function setAvgTempC(?float $avgTempC): static
+    public function setMaxSpeedKmh(?float $maxSpeedKmh): static
     {
-        $this->avgTempC = $avgTempC;
+        $this->maxSpeedKmh = $maxSpeedKmh;
 
         return $this;
     }

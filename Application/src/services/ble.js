@@ -48,6 +48,20 @@ export function rpmFromRaw(gxRaw, gyRaw, gzRaw) {
   return Math.sqrt(gxRaw * gxRaw + gyRaw * gyRaw + gzRaw * gzRaw) / 24
 }
 
+const GRAVITY_MS2 = 9.80665
+
+/**
+ * Net dynamic acceleration above the ~1g gravity baseline, in m/s², given a
+ * sample's accelerometer magnitude in g (see accelMagnitudeG_mg in
+ * useDiscBle.js). Floored at 0 rather than going negative — only the portion
+ * of accel beyond gravity should drive the linear-speed integration that
+ * consumes this (useDiscBle.js's onDataFrame), since below-baseline magnitude
+ * doesn't mean "decelerating downward" in any recoverable sense.
+ */
+export function netAccelMs2(accelMagnitudeG) {
+  return Math.max(0, accelMagnitudeG - 1) * GRAVITY_MS2
+}
+
 /**
  * Standard barometric formula, returning height above the baseline pressure
  * in meters (positive as pressure drops below the baseline, i.e. gaining

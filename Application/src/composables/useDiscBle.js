@@ -14,6 +14,7 @@ import {
   parseDeviceStatus,
   parseProtocolInfo,
   pressureToRelativeAltitudeM,
+  netAccelMs2,
 } from '@/services/ble'
 
 // Whether BleClient.initialize() has succeeded at least once. Deliberately a
@@ -25,6 +26,26 @@ let bleInitialized = false
 // Hard cap on recordingSeries length, kept in sync with the backend's own
 // 3000-entry cap on the `series` field.
 const RECORDING_SERIES_MAX_LENGTH = 3000
+
+// A real disc-golf release (especially a putt/short throw, dominated by
+// wrist-snap spin rather than a big body swing) can leave only a very small
+// mark on accelerometer magnitude — sometimes under 1%g above resting
+// gravity, barely clearing MEMS sensor noise. A fixed "above X g" cutoff
+// either misses throws like that entirely (reads a flat 0) or, set low
+// enough to catch them, lets ordinary handling noise integrate unbounded
+// over a whole multi-second recording. SPEED_DECAY_HALF_LIFE_S sidesteps
+// both: every sample's net accel is integrated with no cutoff, but the
+// running speed continuously decays with this half-life, so only
+// acceleration sustained over roughly this long (a genuine swing/release)
+// builds up a visible speed — a few noisy samples decay back out before
+// they can accumulate into something misleading.
+const SPEED_DECAY_HALF_LIFE_S = 0.25
+
+// A missed BLE notification (dropped frame, backgrounded app, etc.) can leave
+// a multi-second gap between two onDataFrame calls; without a cap that gap
+// would get treated as real elapsed motion time and inject a huge spurious
+// speed spike. No single frame is expected to legitimately take this long.
+const MAX_FRAME_INTERVAL_S = 0.5
 
 function classifyRequestDeviceError(err) {
   const msg = String(err?.message ?? err ?? '').toLowerCase()
@@ -75,6 +96,9 @@ export function useDiscBle() {
   let recordingMaxRpm = 0
   let recordingMaxAltM = 0
   let recordingMaxAccelMagnitude = 0
+  let recordingSpeedMs = 0 // running (non-negative) integrated linear-speed estimate
+  let recordingMaxSpeedMs = 0
+  let recordingLastFrameAtMs = null
   let recordingSeries = []
 
   function resetDeviceRefs() {
@@ -95,11 +119,28 @@ export function useDiscBle() {
     recordingMaxRpm = 0
     recordingMaxAltM = 0
     recordingMaxAccelMagnitude = 0
+    recordingSpeedMs = 0
+    recordingMaxSpeedMs = 0
+    recordingLastFrameAtMs = null
     recordingSeries = []
   }
 
   function accelMagnitudeG_mg(x, y, z) {
     return Math.sqrt(x * x + y * y + z * z) / 1000
+  }
+
+  /**
+   * Rough linear-speed estimate: integrates each sample's dynamic (above-1g)
+   * accel magnitude over time, in m/s², as a leaky integrator — see
+   * SPEED_DECAY_HALF_LIFE_S for why decay (rather than a hard reset
+   * threshold) is used to keep drift bounded. This is magnitude-only (no
+   * orientation tracking, so it can't tell forward accel from spin-induced
+   * centripetal accel).
+   */
+  function integrateSpeedSample(accelMagnitudeG, dtS) {
+    const decay = Math.pow(0.5, dtS / SPEED_DECAY_HALF_LIFE_S)
+    recordingSpeedMs = recordingSpeedMs * decay + netAccelMs2(accelMagnitudeG) * dtS
+    if (recordingSpeedMs > recordingMaxSpeedMs) recordingMaxSpeedMs = recordingSpeedMs
   }
 
   function onDataFrame(dataView) {
@@ -123,15 +164,29 @@ export function useDiscBle() {
     if (isRecording.value) {
       recordingSamples += frame.samples.length
       let frameMaxRpm = 0
+      const now = Date.now()
+      // Frame-level timestamp only (no per-sample clock), so samples within
+      // a frame are treated as evenly spaced across the interval since the
+      // previous frame arrived.
+      const sampleDtS = recordingLastFrameAtMs != null
+        ? Math.min((now - recordingLastFrameAtMs) / 1000, MAX_FRAME_INTERVAL_S) / frame.samples.length
+        : null
       for (const s of frame.samples) {
         if (s.rpm > recordingMaxRpm) recordingMaxRpm = s.rpm
         if (s.rpm > frameMaxRpm) frameMaxRpm = s.rpm
         const mag = accelMagnitudeG_mg(s.accelX_mg, s.accelY_mg, s.accelZ_mg)
         if (mag > recordingMaxAccelMagnitude) recordingMaxAccelMagnitude = mag
+        if (sampleDtS != null) integrateSpeedSample(mag, sampleDtS)
       }
+      recordingLastFrameAtMs = now
       if (altitudeM > recordingMaxAltM) recordingMaxAltM = altitudeM
       if (recordingSeries.length < RECORDING_SERIES_MAX_LENGTH) {
-        recordingSeries.push({ tMs: Date.now() - recordingStartedAt, rpm: frameMaxRpm, altM: altitudeM })
+        recordingSeries.push({
+          tMs: Date.now() - recordingStartedAt,
+          rpm: frameMaxRpm,
+          altM: altitudeM,
+          speedKmh: recordingSpeedMs * 3.6,
+        })
       }
     }
   }
@@ -312,6 +367,7 @@ export function useDiscBle() {
       maxRpm: recordingMaxRpm,
       maxAltM: recordingMaxAltM,
       maxAccelMagnitude: recordingMaxAccelMagnitude,
+      maxSpeedKmh: recordingMaxSpeedMs * 3.6,
       sampleCount: recordingSamples,
       series: [...recordingSeries],
     }

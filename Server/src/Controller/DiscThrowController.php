@@ -258,7 +258,7 @@ class DiscThrowController extends AbstractController
             'maxRpm' => $throw->setMaxRpm(...),
             'maxAltM' => $throw->setMaxAltM(...),
             'maxAccelMagnitude' => $throw->setMaxAccelMagnitude(...),
-            'avgTempC' => $throw->setAvgTempC(...),
+            'maxSpeedKmh' => $throw->setMaxSpeedKmh(...),
         ];
 
         foreach ($setters as $field => $setter) {
@@ -295,12 +295,12 @@ class DiscThrowController extends AbstractController
         foreach ($series as $entry) {
             if (
                 !is_array($entry)
-                || 3 !== count($entry)
                 || !array_key_exists('tMs', $entry)
                 || !array_key_exists('rpm', $entry)
                 || !array_key_exists('altM', $entry)
+                || [] !== array_diff(array_keys($entry), ['tMs', 'rpm', 'altM', 'speedKmh'])
             ) {
-                return $this->json(['errors' => ['series' => 'Each series entry must have exactly tMs, rpm, and altM.'], 'code' => 'invalid_throw_data'], Response::HTTP_UNPROCESSABLE_ENTITY);
+                return $this->json(['errors' => ['series' => 'Each series entry must have tMs, rpm, and altM, plus an optional speedKmh.'], 'code' => 'invalid_throw_data'], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
             if (!is_int($entry['tMs']) || $entry['tMs'] < 0) {
@@ -313,6 +313,10 @@ class DiscThrowController extends AbstractController
 
             if (!is_int($entry['altM']) && !is_float($entry['altM'])) {
                 return $this->json(['errors' => ['series' => 'Each series entry must have a numeric altM.'], 'code' => 'invalid_throw_data'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            if (array_key_exists('speedKmh', $entry) && ((!is_int($entry['speedKmh']) && !is_float($entry['speedKmh'])) || $entry['speedKmh'] < 0)) {
+                return $this->json(['errors' => ['series' => 'Each series entry\'s speedKmh must be a non-negative number.'], 'code' => 'invalid_throw_data'], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
         }
 

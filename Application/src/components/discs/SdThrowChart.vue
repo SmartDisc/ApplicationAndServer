@@ -1,10 +1,17 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { convertSpeed, speedUnitLabel, convertDistance, distanceUnitLabel } from '@/utils/units'
 
 const props = defineProps({
   series: { type: Array, required: true },
-  metric: { type: String, required: true }, // 'rpm' | 'alt'
+  metric: { type: String, required: true }, // 'rpm' | 'alt' | 'speed'
   title: { type: String, required: true },
+  // Only consulted when metric === 'speed' — series values are always stored
+  // in km/h (see units.js), converted to the display unit here.
+  speedUnit: { type: String, default: 'm/s' },
+  // Only consulted when metric === 'alt' — series values are always stored
+  // in meters, converted to the display unit here.
+  distanceUnit: { type: String, default: 'm' },
 })
 
 const METRIC = {
@@ -20,9 +27,20 @@ const METRIC = {
     formatValue: v => `${v.toFixed(2)}`,
     unit: 'm',
   },
+  speed: {
+    color: 'var(--sd-azure)',
+    valueKey: 'speedKmh',
+    formatValue: v => `${v.toFixed(2)}`,
+    unit: 'm/s',
+  },
 }
 
-const cfg = computed(() => METRIC[props.metric])
+const cfg = computed(() => {
+  const base = METRIC[props.metric]
+  if (props.metric === 'speed') return { ...base, unit: speedUnitLabel(props.speedUnit) }
+  if (props.metric === 'alt') return { ...base, unit: distanceUnitLabel(props.distanceUnit) }
+  return base
+})
 
 const W = 300
 const H = 100
@@ -30,22 +48,28 @@ const PAD_X = 4
 const PAD_Y = 10
 
 const points = computed(() => {
-  const pts = props.series
+  // Older throws recorded before the speed metric existed have no
+  // speedKmh on their series entries — nothing to plot yet.
+  const pts = props.metric === 'speed' ? props.series?.filter(p => p.speedKmh != null) : props.series
   if (!pts?.length) return []
   const key = cfg.value.valueKey
   const tMax = pts[pts.length - 1].tMs || 1
-  const values = pts.map(p => p[key])
+  const values = pts.map(p => {
+    if (props.metric === 'speed') return convertSpeed(p[key], props.speedUnit, 2)
+    if (props.metric === 'alt') return convertDistance(p[key], props.distanceUnit, 2)
+    return p[key]
+  })
   let vMin = Math.min(...values)
   let vMax = Math.max(...values)
   if (vMin === vMax) {
     vMin -= 1
     vMax += 1
   }
-  return pts.map(p => ({
+  return pts.map((p, i) => ({
     tMs: p.tMs,
-    value: p[key],
+    value: values[i],
     x: PAD_X + (p.tMs / tMax) * (W - PAD_X * 2),
-    y: PAD_Y + (1 - (p[key] - vMin) / (vMax - vMin)) * (H - PAD_Y * 2),
+    y: PAD_Y + (1 - (values[i] - vMin) / (vMax - vMin)) * (H - PAD_Y * 2),
   }))
 })
 

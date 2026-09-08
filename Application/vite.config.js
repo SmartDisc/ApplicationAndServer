@@ -11,6 +11,9 @@ export default defineConfig({
     vueDevTools(),
   ],
   base: './',
+  server: {
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

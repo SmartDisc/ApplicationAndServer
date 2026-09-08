@@ -48,7 +48,7 @@ function mapThrow(raw) {
     durationMs: raw.durationMs,
     maxAltM: raw.maxAltM,
     maxAccelMagnitude: raw.maxAccelMagnitude,
-    avgTempC: raw.avgTempC,
+    maxSpeedKmh: raw.maxSpeedKmh,
     recordedByName: raw.recordedByName,
     series: raw.series ?? null,
   }

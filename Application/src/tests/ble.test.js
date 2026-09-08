@@ -12,6 +12,7 @@ import {
   parseProtocolInfo,
   rpmFromRaw,
   pressureToRelativeAltitudeM,
+  netAccelMs2,
 } from '../services/ble.js'
 import { useDiscBle } from '../composables/useDiscBle.js'
 
@@ -126,6 +127,21 @@ describe('pressureToRelativeAltitudeM', () => {
   })
   it('returns 0 instead of throwing/NaN for an invalid pressure reading', () => {
     expect(pressureToRelativeAltitudeM(NaN, 101325)).toBe(0)
+  })
+})
+
+// --- netAccelMs2 -------------------------------------------------------
+
+describe('netAccelMs2', () => {
+  it('is 0 at rest (1g)', () => {
+    expect(netAccelMs2(1)).toBe(0)
+  })
+  it('is 0 below the 1g baseline (floored, not negative)', () => {
+    expect(netAccelMs2(0.4)).toBe(0)
+  })
+  it('scales the portion of magnitude above 1g by standard gravity', () => {
+    expect(netAccelMs2(2)).toBeCloseTo(9.80665, 10)
+    expect(netAccelMs2(1.5)).toBeCloseTo(4.903325, 10)
   })
 })
 

@@ -44,7 +44,6 @@ function rawThrow(overrides = {}) {
     maxRpm: 812.6,
     maxAltM: 12.3,
     maxAccelMagnitude: 4.2,
-    avgTempC: 21.5,
     sampleCount: 300,
     isFavorite: false,
     recordedById: 'user-1',
@@ -81,7 +80,6 @@ describe('useThrows — fetchThrows / getThrows', () => {
       durationMs: 1500,
       maxAltM: 12.3,
       maxAccelMagnitude: 4.2,
-      avgTempC: 21.5,
       recordedByName: 'Alex Rivera',
     })
     expect(throws[0].day).toBeTruthy()
@@ -121,7 +119,6 @@ describe('useThrows — saveThrow', () => {
       maxRpm: 900,
       maxAltM: 20,
       maxAccelMagnitude: 5,
-      avgTempC: 22,
       sampleCount: 400,
     }
     const result = await saveThrow(DISC_ID, summary, { name: 'My Ace' })

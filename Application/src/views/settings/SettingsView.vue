@@ -128,11 +128,11 @@ const distanceLabel = computed(() =>
 )
 
 const speedOptions = computed(() => [
-  {value: 'km/h', label: t('settings.appearance.speedKmh'), badge: 'km/h'},
-  {value: 'mph', label: t('settings.appearance.speedMph'), badge: 'mph'},
+  {value: 'm/s', label: t('settings.appearance.speedMs'), badge: 'm/s'},
+  {value: 'ft/s', label: t('settings.appearance.speedFtS'), badge: 'ft/s'},
 ])
 const speedLabel = computed(() =>
-    speedOptions.value.find(o => o.value === speedUnit.value)?.badge ?? 'km/h'
+    speedOptions.value.find(o => o.value === speedUnit.value)?.badge ?? 'm/s'
 )
 
 const languageOptions = computed(() => [

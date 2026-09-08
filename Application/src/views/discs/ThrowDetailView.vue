@@ -5,19 +5,22 @@ import SdAppBar from '@/components/ui/SdAppBar.vue'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowChart from '@/components/discs/SdThrowChart.vue'
 import SdFlightPathChart from '@/components/discs/SdFlightPathChart.vue'
-import { SdBtn, SdChip, SdIconBtn, SdBottomSheet, SdField } from '@/components/ui'
-import { Pencil, MoreHorizontal, Home, Trash2, AlertTriangle } from 'lucide-vue-next'
+import { SdBtn, SdChip, SdBottomSheet, SdField } from '@/components/ui'
+import { Pencil, MoreHorizontal, Trash2, AlertTriangle } from 'lucide-vue-next'
 import { useDiscs } from '@/composables/useDiscs'
 import { useThrows, formatThrowTime } from '@/composables/useThrows'
 import { useCountUp } from '@/composables/useCountUp'
+import { usePreferences } from '@/composables/usePreferences'
 import { mapAuthError } from '@/stores/auth'
 import { sanitizeText } from '@/utils/sanitize'
+import { convertSpeed, speedUnitLabel, convertDistance, distanceUnitLabel } from '@/utils/units'
 import { useI18n } from '@/i18n'
 
 const route = useRoute()
 const router = useRouter()
 const { getDisc } = useDiscs()
 const { getThrows, fetchThrows, renameThrow, deleteThrow } = useThrows()
+const { distanceUnit, speedUnit } = usePreferences()
 const { t } = useI18n()
 
 const cameFromRecording = computed(() => route.query.justRecorded === '1')
@@ -92,8 +95,14 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
 // they're showing changes, rather than just popping in.
 const rpmValue      = useCountUp(computed(() => throw_.value?.rpm ?? null), n => `${Math.round(n)}`)
 const durationS     = useCountUp(computed(() => (throw_.value ? throw_.value.durationMs / 1000 : null)), n => `${n.toFixed(1)}s`)
-const maxAlt        = useCountUp(computed(() => throw_.value?.maxAltM ?? null), n => `${n.toFixed(2)}m`)
-const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null), n => `${n.toFixed(1)}°C`)
+const maxAlt = useCountUp(
+  computed(() => (throw_.value?.maxAltM != null ? convertDistance(throw_.value.maxAltM, distanceUnit.value, 2) : null)),
+  n => `${n.toFixed(2)} ${distanceUnitLabel(distanceUnit.value)}`
+)
+const maxSpeed = useCountUp(
+  computed(() => (throw_.value?.maxSpeedKmh != null ? convertSpeed(throw_.value.maxSpeedKmh, speedUnit.value, 2) : null)),
+  n => `${n.toFixed(2)} ${speedUnitLabel(speedUnit.value)}`
+)
 </script>
 
 <template>
@@ -104,13 +113,7 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
     </div>
 
     <div class="throw-content">
-      <SdAppBar back :back-to="cameFromRecording ? `/discs/${route.params.id}` : ''">
-        <template #action>
-          <SdIconBtn v-if="cameFromRecording" variant="glass" :to="`/discs/${route.params.id}`" class="throw-home-btn">
-            <Home :size="18" :stroke-width="1.75" />
-          </SdIconBtn>
-        </template>
-      </SdAppBar>
+      <SdAppBar back :back-to="cameFromRecording ? `/discs/${route.params.id}` : ''" />
 
       <div class="throw-header">
         <div class="throw-title-row">
@@ -154,21 +157,22 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
       <!-- Stats: two stacked rows on phones, one combined row ≥768px -->
       <div class="stat-rows">
         <div class="stat-row stat-row--primary">
+          <SdStatTile dark :v="maxSpeed" :k="t('discs.throwDetail.maxSpeed')" />
           <SdStatTile dark :v="rpmValue" :k="t('discs.throwDetail.rpm')" />
-          <SdStatTile dark :v="durationS" :k="t('discs.throwDetail.duration')" />
         </div>
 
         <div class="stat-row stat-row--secondary">
-          <SdStatTile dark :v="avgTemp" :k="t('discs.throwDetail.avgTemp')" />
+          <SdStatTile dark :v="durationS" :k="t('discs.throwDetail.duration')" />
           <SdStatTile dark :v="maxAlt" :k="t('discs.throwDetail.maxAltitude')" />
         </div>
       </div>
 
       <div v-if="throw_?.series?.length" :key="throw_.id" class="throw-charts">
-        <SdFlightPathChart :series="throw_.series" :duration-ms="throw_.durationMs" />
+        <SdFlightPathChart :series="throw_.series" :duration-ms="throw_.durationMs" :distance-unit="distanceUnit" :speed-unit="speedUnit" />
         <div class="throw-charts__pair">
+          <SdThrowChart :series="throw_.series" metric="speed" :speed-unit="speedUnit" :title="t('discs.throwDetail.speedChart')" />
           <SdThrowChart :series="throw_.series" metric="rpm" :title="t('discs.throwDetail.spinChart')" />
-          <SdThrowChart :series="throw_.series" metric="alt" :title="t('discs.throwDetail.altitudeChart')" />
+          <SdThrowChart :series="throw_.series" metric="alt" :distance-unit="distanceUnit" :title="t('discs.throwDetail.altitudeChart')" />
         </div>
       </div>
 
@@ -271,11 +275,6 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
 .throw-content :deep(.appbar__title) {
   color: var(--sd-fg-on-dark);
 }
-.throw-content :deep(.throw-home-btn) {
-  background: rgba(255, 255, 255, .12);
-  border-color: rgba(255, 255, 255, .18);
-  color: #fff;
-}
 
 .dark-icon-btn {
   width: 38px;
@@ -374,9 +373,9 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
   .stat-row {
     margin-bottom: 0;
   }
-  /* 3 + 2 tiles → equal widths across the combined row */
-  .stat-row--primary { flex: 3; }
-  .stat-row--secondary { flex: 2; }
+  /* 2 + 2 tiles → equal widths across the combined row */
+  .stat-row--primary { flex: 1; }
+  .stat-row--secondary { flex: 1; }
 }
 
 .throw-charts {

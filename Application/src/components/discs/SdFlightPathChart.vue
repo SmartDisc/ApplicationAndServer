@@ -1,11 +1,18 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
+import { convertDistance, distanceUnitLabel, convertSpeed, speedUnitLabel } from '@/utils/units'
 import { useI18n } from '@/i18n'
 
 const props = defineProps({
   series: { type: Array, default: () => [] },
   durationMs: { type: Number, default: null },
+  // Series altM values are always stored in meters, converted to the
+  // display unit here.
+  distanceUnit: { type: String, default: 'm' },
+  // Series speedKmh values are always stored in km/h, converted to the
+  // display unit here.
+  speedUnit: { type: String, default: 'm/s' },
 })
 
 const { t } = useI18n()
@@ -58,6 +65,9 @@ const points = computed(() => {
     tMs: p.tMs,
     altM: alts[i],
     rpm: p.rpm,
+    // Older throws recorded before the speed metric existed have no
+    // speedKmh on their series entries.
+    speedKmh: p.speedKmh ?? 0,
     x: PAD_X + (p.tMs / tMax.value) * (W - PAD_X * 2),
     y: PAD_Y + (1 - (alts[i] - aMin) / (aMax - aMin)) * (H - PAD_Y * 2),
   }))
@@ -76,7 +86,9 @@ const peakPoint = computed(() => {
 })
 const peakProgress = computed(() => (peakPoint.value ? peakPoint.value.tMs / tMax.value : 0))
 const peakLabelText = computed(() =>
-  peakPoint.value ? `${peakPoint.value.altM.toFixed(1)} m ${t('discs.throwDetail.flightPath.peak')}` : ''
+  peakPoint.value
+    ? `${convertDistance(peakPoint.value.altM, props.distanceUnit, 1).toFixed(1)} ${distanceUnitLabel(props.distanceUnit)} ${t('discs.throwDetail.flightPath.peak')}`
+    : ''
 )
 
 // ── Disc-in-flight animation ────────────────────────────────────────────────
@@ -87,7 +99,7 @@ const discScale = ref(1)
 const animating = ref(false)
 // Time-fraction (0 = release, 1 = catch) behind the animation currently on
 // screen. Drives the progressive trail reveal, the peak marker, and the live
-// height/spin readout so they all stay in lockstep with the disc dot.
+// speed/height/spin readout so they all stay in lockstep with the disc dot.
 const flightProgress = ref(0)
 
 const prefersReducedMotion = () =>
@@ -98,7 +110,7 @@ const prefersReducedMotion = () =>
 // doesn't track real elapsed time (it visibly drags near the flat apex).
 // Interpolating on the same tMs/tMax fraction used to place the points makes
 // on-screen speed match the actual recorded timing instead, and carries
-// altM/rpm along so the live stat tiles read off the exact same sample.
+// altM/rpm/speedKmh along so the live stat tiles read off the exact same sample.
 function interpolateAtProgress(progress) {
   const pts = points.value
   const targetT = progress * tMax.value
@@ -115,6 +127,7 @@ function interpolateAtProgress(progress) {
         y: p0.y + (p1.y - p0.y) * frac,
         altM: p0.altM + (p1.altM - p0.altM) * frac,
         rpm: p0.rpm + (p1.rpm - p0.rpm) * frac,
+        speedKmh: p0.speedKmh + (p1.speedKmh - p0.speedKmh) * frac,
       }
     }
   }
@@ -124,8 +137,13 @@ function interpolateAtProgress(progress) {
 const liveSample = computed(() =>
   points.value.length ? interpolateAtProgress(flightProgress.value) : null
 )
-const heightLabel = computed(() => (liveSample.value ? liveSample.value.altM.toFixed(1) : '0.0'))
+const heightLabel = computed(() =>
+  liveSample.value ? convertDistance(liveSample.value.altM, props.distanceUnit, 1).toFixed(1) : '0.0'
+)
 const spinLabel = computed(() => (liveSample.value ? `${Math.round(liveSample.value.rpm)}` : '0'))
+const speedLabel = computed(() =>
+  liveSample.value ? convertSpeed(liveSample.value.speedKmh, props.speedUnit, 1).toFixed(1) : '0.0'
+)
 const scrubTimeLabel = computed(() =>
   liveSample.value ? `${((flightProgress.value * tMax.value) / 1000).toFixed(2)}s` : ''
 )
@@ -405,13 +423,14 @@ onUnmounted(() => {
       </div>
 
       <div v-if="scrubbing && liveSample" class="flight-chart__scrub-tooltip" :style="scrubTooltipStyle">
-        <strong>{{ heightLabel }} m · {{ spinLabel }} rpm</strong>
+        <strong>{{ speedLabel }} {{ speedUnitLabel(speedUnit) }} · {{ heightLabel }} {{ distanceUnitLabel(distanceUnit) }} · {{ spinLabel }} rpm</strong>
         <span>{{ scrubTimeLabel }}</span>
       </div>
     </div>
 
     <div class="flight-chart__stats">
-      <SdStatTile dark :v="heightLabel" u="m" :k="t('discs.throwDetail.flightPath.height')" />
+      <SdStatTile dark :v="speedLabel" :u="speedUnitLabel(speedUnit)" :k="t('discs.throwDetail.flightPath.speed')" />
+      <SdStatTile dark :v="heightLabel" :u="distanceUnitLabel(distanceUnit)" :k="t('discs.throwDetail.flightPath.height')" />
       <SdStatTile dark :v="spinLabel" u="rpm" :k="t('discs.throwDetail.flightPath.spin')" />
     </div>
   </div>

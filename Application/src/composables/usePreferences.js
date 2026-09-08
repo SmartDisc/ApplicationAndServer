@@ -15,10 +15,15 @@ function persist(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
+// Only m/s and ft/s are offered as speed units (see SettingsView.vue) — a
+// stored 'km/h'/'mph' from before that change is no longer valid, so it
+// falls back to the default rather than rendering an unselectable unit.
+const SPEED_UNITS = ['m/s', 'ft/s']
+
 const _stored       = load()
 const _language     = ref(_stored?.language     ?? 'en')
 const _distanceUnit = ref(_stored?.distanceUnit ?? 'm')
-const _speedUnit    = ref(_stored?.speedUnit    ?? 'km/h')
+const _speedUnit    = ref(SPEED_UNITS.includes(_stored?.speedUnit) ? _stored.speedUnit : 'm/s')
 
 document.documentElement.setAttribute('lang', _language.value)
 
