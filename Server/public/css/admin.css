@@ -213,7 +213,8 @@ form.admin-form { display: flex; flex-direction: column; gap: 16px; }
 .admin-form input[type="text"],
 .admin-form input[type="password"],
 .admin-form input[type="email"],
-.admin-form select {
+.admin-form select,
+.admin-form textarea {
   width: 100%;
   font-family: var(--sd-font-body);
   font-size: 15px;
@@ -223,7 +224,8 @@ form.admin-form { display: flex; flex-direction: column; gap: 16px; }
   border-radius: var(--sd-r-sm);
   padding: 10px 14px;
 }
-.admin-form input:focus, .admin-form select:focus {
+.admin-form textarea { resize: vertical; min-height: 96px; }
+.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus {
   outline: none;
   border-color: var(--sd-azure);
   box-shadow: 0 0 0 3px rgba(111,147,181,.20);

@@ -53,28 +53,6 @@ const linePath = computed(() =>
   points.value.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
 )
 
-const peakPoint = computed(() => {
-  if (!points.value.length) return null
-  return points.value.reduce((a, b) => (b.value > a.value ? b : a))
-})
-
-const peakLabelText = computed(() => {
-  if (!peakPoint.value) return ''
-  const seconds = (peakPoint.value.tMs / 1000).toFixed(1)
-  return `${cfg.value.formatValue(peakPoint.value.value)} ${cfg.value.unit} · ${seconds}s`
-})
-
-const peakTagStyle = computed(() => {
-  if (!peakPoint.value) return {}
-  const nearTop = peakPoint.value.y / H < 0.3
-  return {
-    left: `${(peakPoint.value.x / W) * 100}%`,
-    top: nearTop ? `${(peakPoint.value.y / H) * 100}%` : undefined,
-    bottom: nearTop ? undefined : `${(1 - peakPoint.value.y / H) * 100}%`,
-    transform: `translate(-50%, ${nearTop ? '10px' : '-10px'})`,
-  }
-})
-
 const maxTimeLabel = computed(() => {
   const last = props.series?.[props.series.length - 1]
   return last ? `${(last.tMs / 1000).toFixed(1)}s` : ''
@@ -126,7 +104,6 @@ const hoverTooltipStyle = computed(() => {
   <div class="throw-chart">
     <div class="throw-chart__head">
       <span class="throw-chart__title">{{ title }}</span>
-      <span v-if="peakPoint" class="throw-chart__peak-summary">{{ peakLabelText }}</span>
     </div>
 
     <div class="throw-chart__plot">
@@ -148,20 +125,13 @@ const hoverTooltipStyle = computed(() => {
           :y2="PAD_Y + frac * (H - PAD_Y * 2)"
         />
 
-        <path :d="linePath" class="throw-chart__line" :style="{ stroke: cfg.color }" fill="none" />
+        <path :d="linePath" class="throw-chart__line" :style="{ stroke: cfg.color }" fill="none" pathLength="1" />
 
         <line
           v-if="hoverPoint"
           class="throw-chart__crosshair"
           :x1="hoverPoint.x" :x2="hoverPoint.x"
           :y1="0" :y2="H"
-        />
-
-        <circle
-          v-if="peakPoint"
-          class="throw-chart__peak-dot"
-          :cx="peakPoint.x" :cy="peakPoint.y" r="4"
-          :fill="cfg.color"
         />
 
         <circle
@@ -177,10 +147,6 @@ const hoverTooltipStyle = computed(() => {
           :cx="hoverPoint.x" :cy="hoverPoint.y" r="12"
         />
       </svg>
-
-      <div v-if="peakPoint" class="throw-chart__peak-tag" :style="peakTagStyle">
-        {{ peakLabelText }}
-      </div>
 
       <div v-if="hoverPoint" class="throw-chart__tooltip" :style="hoverTooltipStyle">
         <strong>{{ cfg.formatValue(hoverPoint.value) }} {{ cfg.unit }}</strong>
@@ -220,14 +186,6 @@ const hoverTooltipStyle = computed(() => {
   color: var(--sd-fg2-on-dark);
 }
 
-.throw-chart__peak-summary {
-  font-family: var(--sd-font-display);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sd-fg-on-dark);
-  white-space: nowrap;
-}
-
 .throw-chart__plot {
   position: relative;
   height: 92px;
@@ -252,6 +210,13 @@ const hoverTooltipStyle = computed(() => {
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: sd-chart-draw 900ms var(--sd-ease-out) forwards;
+}
+
+@keyframes sd-chart-draw {
+  to { stroke-dashoffset: 0; }
 }
 
 .throw-chart__crosshair {
@@ -260,7 +225,6 @@ const hoverTooltipStyle = computed(() => {
   vector-effect: non-scaling-stroke;
 }
 
-.throw-chart__peak-dot,
 .throw-chart__hover-dot {
   stroke: var(--sd-ink-900);
   stroke-width: 2;
@@ -269,16 +233,6 @@ const hoverTooltipStyle = computed(() => {
 
 .throw-chart__hit-area {
   fill: transparent;
-  pointer-events: none;
-}
-
-.throw-chart__peak-tag {
-  position: absolute;
-  font-family: var(--sd-font-display);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--sd-fg-on-dark);
-  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -317,5 +271,12 @@ const hoverTooltipStyle = computed(() => {
   font-size: 10px;
   color: var(--sd-fg2-on-dark);
   opacity: .7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .throw-chart__line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 </style>

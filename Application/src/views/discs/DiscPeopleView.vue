@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Crown, Eye, UserPlus, UserMinus, Clock, X, Loader2 } from 'lucide-vue-next'
+import { Crown, UserPlus, UserMinus, Clock, X, Loader2 } from 'lucide-vue-next'
 import SdAvatar from '@/components/ui/SdAvatar.vue'
 import { SdBtn, SdChip, SdCard, SdBottomSheet } from '@/components/ui'
 import { useDiscs } from '@/composables/useDiscs'
@@ -135,19 +135,16 @@ async function handleInvite(friend) {
       <p v-else-if="removeError" class="people-error">{{ removeError }}</p>
 
       <div
-        v-for="member in discMembers"
+        v-for="(member, i) in discMembers"
         :key="member.id"
-        class="member-row member-row--border"
+        class="member-row member-row--border sd-stagger-in"
+        :style="{ '--i': i }"
       >
         <SdAvatar :name="member.name" :hue="320" :has-image="!!member.hasAvatar" :image-url="member.avatarUrl" />
         <div class="member-info">
           <div class="member-name">{{ member.name }}</div>
           <div class="member-email">{{ member.email }}</div>
         </div>
-        <SdChip tone="read">
-          <template #icon><Eye :size="12" /></template>
-          {{ t('discs.people.read') }}
-        </SdChip>
         <button class="remove-btn" @click="confirmRemoveMember(member)">
           <UserMinus :size="14" style="color: var(--sd-fg3);" />
         </button>
@@ -170,8 +167,9 @@ async function handleInvite(friend) {
       <div
         v-for="(inv, i) in discInvites"
         :key="inv.id"
-        class="member-row"
+        class="member-row sd-stagger-in"
         :class="{ 'member-row--border': i > 0 }"
+        :style="{ '--i': i }"
       >
         <SdAvatar :name="inv.toName" :hue="260" :has-image="!!inv.toHasAvatar" :image-url="inv.toAvatarUrl" />
         <div class="member-info">

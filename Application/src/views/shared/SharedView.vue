@@ -52,7 +52,7 @@ onMounted(() => {
     <p v-if="sharedDiscsError" class="shared-error">{{ sharedDiscsError }}</p>
 
     <div v-if="!sharedDiscsError && sharedDiscs.length === 0" class="shared-empty">
-      <div class="shared-empty__card">
+      <div class="shared-empty__card sd-fade-in">
         <p class="shared-empty__title">{{ t('shared.list.emptyTitle') }}</p>
         <p class="shared-empty__body">{{ t('shared.list.emptyBody') }}</p>
       </div>
@@ -60,10 +60,12 @@ onMounted(() => {
 
     <div v-else class="shared-list">
       <SdDiscCard
-          v-for="disc in sharedDiscs"
+          v-for="(disc, i) in sharedDiscs"
           :key="disc.id"
+          class="sd-stagger-in"
+          :style="{ '--i': i }"
           :name="disc.name"
-          :uuid="`from ${disc.owner} · ${disc.uuid.slice(0, 11)}–`"
+          :uuid="`from ${disc.owner}`"
           :image-url="disc.imageUrl"
           :shared="true"
           @click="router.push(`/shared/${disc.id}`)"

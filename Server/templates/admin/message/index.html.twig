@@ -1,0 +1,55 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Messages — SmartDisc Admin{% endblock %}
+
+{% block admin_body %}
+    <div class="admin-actions-row">
+        <div>
+            <p class="admin-eyebrow">Broadcast</p>
+            <h1 class="admin-title" style="margin-bottom: 0;">Messages</h1>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <form class="admin-form" method="post" action="{{ path('app_admin_message_create') }}">
+            <div>
+                <label for="message-title">Title</label>
+                <input type="text" id="message-title" name="title" maxlength="120" placeholder="e.g. Scheduled maintenance tonight" required>
+            </div>
+            <div>
+                <label for="message-body">Message</label>
+                <textarea id="message-body" name="body" rows="4" placeholder="What do you want every user to see in their notifications?" required></textarea>
+                <p class="form-help">Sends immediately to every registered user as a notification. This can't be undone.</p>
+            </div>
+            <input type="hidden" name="_token" value="{{ csrf_token('send_message') }}">
+            <button class="admin-btn" type="submit">Send to all users</button>
+        </form>
+    </div>
+
+    {% if messages|length == 0 %}
+        <div class="admin-card admin-empty">No messages sent yet.</div>
+    {% else %}
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Message</th>
+                    <th>Sent by</th>
+                    <th>Recipients</th>
+                    <th>Sent</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for message in messages %}
+                <tr>
+                    <td>{{ message.title }}</td>
+                    <td>{{ message.body }}</td>
+                    <td>{{ message.sentBy.email }}</td>
+                    <td>{{ message.recipientCount }}</td>
+                    <td>{{ message.createdAt|date('Y-m-d H:i') }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

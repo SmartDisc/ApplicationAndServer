@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import SdStatTile from '@/components/ui/SdStatTile.vue'
 import { useI18n } from '@/i18n'
 
 const props = defineProps({
@@ -15,6 +16,7 @@ const PAD_X = 16
 const PAD_Y = 20
 const DISC_RX = 15
 const DISC_RY = 5.5
+const BASELINE_Y = H - PAD_Y
 
 // Symmetric moving average (window of 5, clamped at the edges) to smooth out
 // sensor jitter into a cleaner arc. Skipped for short/sparse recordings so we
@@ -36,12 +38,15 @@ function smoothAltitudes(pts) {
   return out
 }
 
+const tMax = computed(() => props.series?.length ? (props.series[props.series.length - 1].tMs || 1) : 1)
+
 // Same normalization the existing altitude chart uses (see SdThrowChart.vue):
-// x = time fraction, y = altitude inverted so it arcs upward on screen.
+// x = time fraction, y = altitude inverted so it arcs upward on screen. Each
+// point also keeps its (smoothed) altitude and raw rpm so the flight
+// animation can read live values off the same series it draws.
 const points = computed(() => {
   const pts = props.series
   if (!pts?.length) return []
-  const tMax = pts[pts.length - 1].tMs || 1
   const alts = smoothAltitudes(pts)
   let aMin = Math.min(...alts)
   let aMax = Math.max(...alts)
@@ -51,7 +56,9 @@ const points = computed(() => {
   }
   return pts.map((p, i) => ({
     tMs: p.tMs,
-    x: PAD_X + (p.tMs / tMax) * (W - PAD_X * 2),
+    altM: alts[i],
+    rpm: p.rpm,
+    x: PAD_X + (p.tMs / tMax.value) * (W - PAD_X * 2),
     y: PAD_Y + (1 - (alts[i] - aMin) / (aMax - aMin)) * (H - PAD_Y * 2),
   }))
 })
@@ -61,7 +68,16 @@ const pathD = computed(() =>
 )
 
 const releasePoint = computed(() => points.value[0] ?? null)
-const catchPoint = computed(() => points.value[points.value.length - 1] ?? null)
+
+const peakPoint = computed(() => {
+  const pts = points.value
+  if (!pts.length) return null
+  return pts.reduce((a, b) => (b.altM > a.altM ? b : a))
+})
+const peakProgress = computed(() => (peakPoint.value ? peakPoint.value.tMs / tMax.value : 0))
+const peakLabelText = computed(() =>
+  peakPoint.value ? `${peakPoint.value.altM.toFixed(1)} m ${t('discs.throwDetail.flightPath.peak')}` : ''
+)
 
 // ── Disc-in-flight animation ────────────────────────────────────────────────
 const discPos = ref(null)
@@ -69,6 +85,10 @@ const discAngle = ref(0)
 const discWobble = ref(1)
 const discScale = ref(1)
 const animating = ref(false)
+// Time-fraction (0 = release, 1 = catch) behind the animation currently on
+// screen. Drives the progressive trail reveal, the peak marker, and the live
+// height/spin readout so they all stay in lockstep with the disc dot.
+const flightProgress = ref(0)
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -77,13 +97,13 @@ const prefersReducedMotion = () =>
 // The path mixes time (x) and altitude (y), so constant arc-length speed
 // doesn't track real elapsed time (it visibly drags near the flat apex).
 // Interpolating on the same tMs/tMax fraction used to place the points makes
-// on-screen speed match the actual recorded timing instead.
+// on-screen speed match the actual recorded timing instead, and carries
+// altM/rpm along so the live stat tiles read off the exact same sample.
 function interpolateAtProgress(progress) {
   const pts = points.value
-  const tMax = pts[pts.length - 1].tMs || 1
-  const targetT = progress * tMax
+  const targetT = progress * tMax.value
 
-  if (targetT <= pts[0].tMs) return { x: pts[0].x, y: pts[0].y }
+  if (targetT <= pts[0].tMs) return { ...pts[0] }
   for (let i = 1; i < pts.length; i++) {
     if (targetT <= pts[i].tMs) {
       const p0 = pts[i - 1]
@@ -93,12 +113,60 @@ function interpolateAtProgress(progress) {
       return {
         x: p0.x + (p1.x - p0.x) * frac,
         y: p0.y + (p1.y - p0.y) * frac,
+        altM: p0.altM + (p1.altM - p0.altM) * frac,
+        rpm: p0.rpm + (p1.rpm - p0.rpm) * frac,
       }
     }
   }
-  const last = pts[pts.length - 1]
-  return { x: last.x, y: last.y }
+  return { ...pts[pts.length - 1] }
 }
+
+const liveSample = computed(() =>
+  points.value.length ? interpolateAtProgress(flightProgress.value) : null
+)
+const heightLabel = computed(() => (liveSample.value ? liveSample.value.altM.toFixed(1) : '0.0'))
+const spinLabel = computed(() => (liveSample.value ? `${Math.round(liveSample.value.rpm)}` : '0'))
+const scrubTimeLabel = computed(() =>
+  liveSample.value ? `${((flightProgress.value * tMax.value) / 1000).toFixed(2)}s` : ''
+)
+
+// Reveals the gold trail up to wherever the disc currently is; a dimmer
+// "ghost" copy of the same path stays underneath so the rest of the arc is
+// still visible as a preview of where the throw is headed.
+const revealWidth = computed(() => (discPos.value ? discPos.value.x : 0))
+
+// Tracks straight down from the disc while it's still climbing, then locks
+// onto the actual peak once the disc has flown past it (and reveals the
+// "peak" label at that point) rather than continuing to chase the disc.
+const pastPeak = computed(() => !!peakPoint.value && flightProgress.value >= peakProgress.value - 0.0001)
+const trackerPoint = computed(() => {
+  if (pastPeak.value) return peakPoint.value
+  return discPos.value ?? releasePoint.value
+})
+const peakTagStyle = computed(() => {
+  if (!pastPeak.value || !peakPoint.value) return {}
+  const nearTop = peakPoint.value.y / H < 0.3
+  return {
+    left: `${(peakPoint.value.x / W) * 100}%`,
+    top: nearTop ? `${(peakPoint.value.y / H) * 100}%` : undefined,
+    bottom: nearTop ? undefined : `${(1 - peakPoint.value.y / H) * 100}%`,
+    transform: `translate(-50%, ${nearTop ? '10px' : '-10px'})`,
+  }
+})
+
+// Floats above (or below, if the touch point is near the top edge) wherever
+// the finger/cursor currently is while scrubbing.
+const scrubTooltipStyle = computed(() => {
+  if (!discPos.value) return {}
+  const nearTop = discPos.value.y / H < 0.3
+  const leftPct = (discPos.value.x / W) * 100
+  return {
+    left: `${leftPct}%`,
+    top: nearTop ? `${(discPos.value.y / H) * 100}%` : undefined,
+    bottom: nearTop ? undefined : `${(1 - discPos.value.y / H) * 100}%`,
+    transform: `translate(${leftPct > 70 ? '-100%' : leftPct < 15 ? '0%' : '-50%'}, ${nearTop ? '14px' : '-14px'})`,
+  }
+})
 
 // A ~1s hold at both ends of the loop reads as two beats (the "ready to
 // throw" pause and the throw "landing") rather than either an abrupt launch
@@ -119,6 +187,7 @@ function settleAtProgress(progress) {
   discAngle.value = Math.atan2(ahead.y - p.y, ahead.x - p.x) * (180 / Math.PI)
   discWobble.value = 1
   discScale.value = 1
+  flightProgress.value = progress
 }
 
 function playFlight() {
@@ -130,6 +199,7 @@ function playFlight() {
     const end = pts[pts.length - 1]
     discPos.value = { x: end.x, y: end.y }
     discAngle.value = 0
+    flightProgress.value = 1
     return
   }
 
@@ -170,6 +240,7 @@ function flyToCatch() {
     // disc rather than a dot sliding along the path.
     discWobble.value = Math.cos(progress * Math.PI * 18)
     discScale.value = 1 - 0.14 * heightFrac
+    flightProgress.value = progress
 
     if (progress < 1) {
       rafId = requestAnimationFrame(frame)
@@ -184,14 +255,51 @@ function flyToCatch() {
   rafId = requestAnimationFrame(frame)
 }
 
-// Always tears down whatever is currently pending (flight frame or either
-// hold timer) before restarting, so a click never leaves two loops racing.
-function replay() {
+// Tears down whatever is currently pending (flight frame or either hold
+// timer), so a click/replay/scrub never leaves two loops racing.
+function stopLoop() {
   if (rafId != null) cancelAnimationFrame(rafId)
   rafId = null
   clearTimeout(pauseTimer)
   animating.value = false
+}
+
+function replay() {
+  stopLoop()
   playFlight()
+}
+
+// ── Tap/drag to inspect a point in the flight ───────────────────────────────
+const svgEl = ref(null)
+const scrubbing = ref(false)
+
+function progressFromClientX(clientX) {
+  if (!svgEl.value || !points.value.length) return 0
+  const rect = svgEl.value.getBoundingClientRect()
+  const fracX = rect.width ? (clientX - rect.left) / rect.width : 0
+  const xViewBox = fracX * W
+  return Math.min(1, Math.max(0, (xViewBox - PAD_X) / (W - PAD_X * 2)))
+}
+
+function onPointerDown(e) {
+  if (!points.value.length) return
+  scrubbing.value = true
+  stopLoop()
+  e.currentTarget.setPointerCapture?.(e.pointerId)
+  settleAtProgress(progressFromClientX(e.clientX))
+}
+
+function onPointerMove(e) {
+  if (!scrubbing.value) return
+  settleAtProgress(progressFromClientX(e.clientX))
+}
+
+// Letting go (or the pointer leaving the chart) hands control back to the
+// auto-replay loop, restarting it from release.
+function endScrub() {
+  if (!scrubbing.value) return
+  scrubbing.value = false
+  replay()
 }
 
 onMounted(() => {
@@ -206,76 +314,106 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="series?.length" class="flight-chart" @click="replay">
+  <div v-if="series?.length" class="flight-chart">
     <div class="flight-chart__head">
       <span class="flight-chart__title">{{ t('discs.throwDetail.flightPath.title') }}</span>
     </div>
-    <svg
-      class="flight-chart__svg"
-      :viewBox="`0 0 ${W} ${H}`"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="sd-flight-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="var(--sd-gold-300)" />
-          <stop offset="100%" stop-color="var(--sd-ink-300)" />
-        </linearGradient>
-        <linearGradient id="sd-disc-gradient" x1="30%" y1="0%" x2="75%" y2="100%">
-          <stop offset="0%" stop-color="var(--sd-fg-on-dark)" />
-          <stop offset="55%" stop-color="var(--sd-fg-on-dark)" />
-          <stop offset="100%" stop-color="var(--sd-ink-300)" />
-        </linearGradient>
-        <filter id="sd-disc-shadow" x="-80%" y="-120%" width="260%" height="320%">
-          <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="var(--sd-ink-900)" flood-opacity="0.45" />
-        </filter>
-      </defs>
 
-      <line
-        v-for="frac in [0, 0.33, 0.66, 1]"
-        :key="`h-${frac}`"
-        class="flight-chart__grid"
-        :x1="0" :x2="W"
-        :y1="PAD_Y + frac * (H - PAD_Y * 2)"
-        :y2="PAD_Y + frac * (H - PAD_Y * 2)"
-      />
-      <line
-        v-for="frac in [0, 0.25, 0.5, 0.75, 1]"
-        :key="`v-${frac}`"
-        class="flight-chart__grid"
-        :x1="PAD_X + frac * (W - PAD_X * 2)" :x2="PAD_X + frac * (W - PAD_X * 2)"
-        :y1="0" :y2="H"
-      />
-
-      <path
-        :d="pathD"
-        class="flight-chart__path"
-        stroke="url(#sd-flight-gradient)"
-        fill="none"
-      />
-
-      <circle
-        v-if="releasePoint"
-        class="flight-chart__dot flight-chart__dot--release"
-        :cx="releasePoint.x" :cy="releasePoint.y" r="5"
-      />
-      <circle
-        v-if="catchPoint"
-        class="flight-chart__dot flight-chart__dot--catch"
-        :cx="catchPoint.x" :cy="catchPoint.y" r="5"
-      />
-
-      <g
-        v-if="discPos"
-        class="flight-chart__disc"
-        filter="url(#sd-disc-shadow)"
-        :style="{ transform: `translate(${discPos.x}px, ${discPos.y}px) rotate(${discAngle}deg) scale(${discScale}) scaleY(${0.55 + 0.15 * discWobble})` }"
+    <div class="flight-chart__plot">
+      <svg
+        ref="svgEl"
+        class="flight-chart__svg"
+        :viewBox="`0 0 ${W} ${H}`"
+        preserveAspectRatio="none"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="endScrub"
+        @pointercancel="endScrub"
       >
-        <ellipse cx="0" cy="0" :rx="DISC_RX + 1.5" :ry="DISC_RY + 1.2" class="flight-chart__disc-rim" />
-        <ellipse :cy="DISC_RY * 0.5" :rx="DISC_RX * 0.95" :ry="DISC_RY * 0.75" class="flight-chart__disc-underside" />
-        <ellipse cx="0" cy="0" :rx="DISC_RX" :ry="DISC_RY" class="flight-chart__disc-body" />
-        <ellipse :cx="-DISC_RX * 0.3" :cy="-DISC_RY * 0.35" :rx="DISC_RX * 0.35" :ry="DISC_RY * 0.3" class="flight-chart__disc-highlight" />
-      </g>
-    </svg>
+        <defs>
+          <linearGradient id="sd-flight-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="var(--sd-gold-300)" />
+            <stop offset="100%" stop-color="var(--sd-ink-300)" />
+          </linearGradient>
+          <linearGradient id="sd-disc-gradient" x1="30%" y1="0%" x2="75%" y2="100%">
+            <stop offset="0%" stop-color="var(--sd-fg-on-dark)" />
+            <stop offset="55%" stop-color="var(--sd-fg-on-dark)" />
+            <stop offset="100%" stop-color="var(--sd-ink-300)" />
+          </linearGradient>
+          <filter id="sd-disc-shadow" x="-80%" y="-120%" width="260%" height="320%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="var(--sd-ink-900)" flood-opacity="0.45" />
+          </filter>
+          <clipPath id="sd-flight-reveal">
+            <rect x="0" y="0" :width="revealWidth" :height="H" />
+          </clipPath>
+        </defs>
+
+        <line
+          v-for="frac in [0, 0.33, 0.66, 1]"
+          :key="`h-${frac}`"
+          class="flight-chart__grid"
+          :x1="0" :x2="W"
+          :y1="PAD_Y + frac * (H - PAD_Y * 2)"
+          :y2="PAD_Y + frac * (H - PAD_Y * 2)"
+        />
+        <line
+          v-for="frac in [0, 0.25, 0.5, 0.75, 1]"
+          :key="`v-${frac}`"
+          class="flight-chart__grid"
+          :x1="PAD_X + frac * (W - PAD_X * 2)" :x2="PAD_X + frac * (W - PAD_X * 2)"
+          :y1="0" :y2="H"
+        />
+
+        <!-- Full arc, dim, always visible as a preview of the whole throw -->
+        <path :d="pathD" class="flight-chart__path flight-chart__path--ghost" fill="none" />
+        <!-- Same arc, revealed only up to the disc's current position -->
+        <path
+          :d="pathD"
+          class="flight-chart__path flight-chart__path--active"
+          stroke="url(#sd-flight-gradient)"
+          fill="none"
+          clip-path="url(#sd-flight-reveal)"
+        />
+
+        <line
+          v-if="trackerPoint"
+          class="flight-chart__tracker"
+          :x1="trackerPoint.x" :x2="trackerPoint.x"
+          :y1="trackerPoint.y" :y2="BASELINE_Y"
+        />
+
+        <g
+          v-if="discPos"
+          class="flight-chart__disc"
+          :style="{ transform: `translate(${discPos.x}px, ${discPos.y}px)` }"
+        >
+          <g
+            class="flight-chart__disc-inner"
+            filter="url(#sd-disc-shadow)"
+            :style="{ transform: `rotate(${discAngle}deg) scale(${discScale}) scaleY(${0.55 + 0.15 * discWobble})` }"
+          >
+            <ellipse cx="0" cy="0" :rx="DISC_RX + 1.5" :ry="DISC_RY + 1.2" class="flight-chart__disc-rim" />
+            <ellipse :cy="DISC_RY * 0.5" :rx="DISC_RX * 0.95" :ry="DISC_RY * 0.75" class="flight-chart__disc-underside" />
+            <ellipse cx="0" cy="0" :rx="DISC_RX" :ry="DISC_RY" class="flight-chart__disc-body" />
+            <ellipse :cx="-DISC_RX * 0.3" :cy="-DISC_RY * 0.35" :rx="DISC_RX * 0.35" :ry="DISC_RY * 0.3" class="flight-chart__disc-highlight" />
+          </g>
+        </g>
+      </svg>
+
+      <div v-if="pastPeak && !scrubbing" class="flight-chart__peak-tag" :style="peakTagStyle">
+        {{ peakLabelText }}
+      </div>
+
+      <div v-if="scrubbing && liveSample" class="flight-chart__scrub-tooltip" :style="scrubTooltipStyle">
+        <strong>{{ heightLabel }} m · {{ spinLabel }} rpm</strong>
+        <span>{{ scrubTimeLabel }}</span>
+      </div>
+    </div>
+
+    <div class="flight-chart__stats">
+      <SdStatTile dark :v="heightLabel" u="m" :k="t('discs.throwDetail.flightPath.height')" />
+      <SdStatTile dark :v="spinLabel" u="rpm" :k="t('discs.throwDetail.flightPath.spin')" />
+    </div>
   </div>
 </template>
 
@@ -289,11 +427,16 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+.flight-chart__plot {
+  position: relative;
+}
+
 .flight-chart__svg {
   width: 100%;
   height: 160px;
   display: block;
   overflow: visible;
+  touch-action: pan-y;
 }
 
 .flight-chart__grid {
@@ -308,25 +451,60 @@ onUnmounted(() => {
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+.flight-chart__path--ghost {
+  stroke: rgba(182, 198, 221, .25);
+}
 
-.flight-chart__dot {
-  stroke: var(--sd-ink-900);
-  stroke-width: 2;
+.flight-chart__tracker {
+  stroke: rgba(238, 243, 250, .35);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
   vector-effect: non-scaling-stroke;
 }
-.flight-chart__dot--release {
-  fill: var(--sd-gold-300);
-}
-.flight-chart__dot--catch {
-  fill: var(--sd-fg-on-dark);
+
+.flight-chart__peak-tag {
+  position: absolute;
+  font-family: var(--sd-font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sd-gold-300);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-.flight-chart__disc {
+.flight-chart__scrub-tooltip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: var(--sd-r-xs);
+  background: rgba(10, 28, 61, .92);
+  border: 1px solid rgba(255, 255, 255, .14);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.flight-chart__scrub-tooltip strong {
+  font-family: var(--sd-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sd-fg-on-dark);
+}
+
+.flight-chart__scrub-tooltip span {
+  font-family: var(--sd-font-body);
+  font-size: 10px;
+  color: var(--sd-fg2-on-dark);
+}
+
+.flight-chart__disc-inner {
   /* fill-box + centered origin so rotate/scale pivot on the group's own
      center (0,0), which sits at that center by construction. */
   transform-box: fill-box;
   transform-origin: 50% 50%;
 }
+
 .flight-chart__disc-rim {
   fill: var(--sd-ink-700);
   opacity: 0.55;
@@ -341,6 +519,12 @@ onUnmounted(() => {
 .flight-chart__disc-highlight {
   fill: var(--sd-fg-on-dark);
   opacity: 0.6;
+}
+
+.flight-chart__stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .flight-chart__head {

@@ -182,8 +182,8 @@ const en = {
       speedTitle: 'Speed',
       speedSubtitle: 'km/h · mph',
       languageTitle: 'Language',
-      distanceKmM: 'Kilometers / Meters',
-      distanceMiFt: 'Miles / Feet',
+      distanceKmM: 'Meters',
+      distanceMiFt: 'Feet',
       speedKmh: 'Kilometers per hour',
       speedMph: 'Miles per hour',
       languageEnglish: 'English',
@@ -244,9 +244,6 @@ const en = {
       emptyTitle: 'No discs yet',
       emptyBody: 'Pair a real SmartDisc by entering its UUID and password — it\'ll show up here with every throw tracked.',
       emptyCta: 'Pair your first disc',
-    },
-    discCard: {
-      read: 'Read',
     },
     detail: {
       throws: 'Throws',
@@ -329,6 +326,9 @@ const en = {
       altitudeChart: 'Altitude over time',
       flightPath: {
         title: 'Preview',
+        height: 'Height',
+        spin: 'Spin',
+        peak: 'peak',
       },
       renameSheetTitle: 'Rename throw',
       renameLabel: 'Name of the throw',
@@ -447,7 +447,6 @@ const en = {
     },
     detail: {
       ownedBy: 'owned by {owner}',
-      read: 'Read',
       throws: 'Throws',
       longest: 'Longest',
       topRpm: 'Top RPM',
@@ -670,8 +669,8 @@ const de = {
       speedTitle: 'Geschwindigkeit',
       speedSubtitle: 'km/h · mph',
       languageTitle: 'Sprache',
-      distanceKmM: 'Kilometer / Meter',
-      distanceMiFt: 'Meilen / Fuß',
+      distanceKmM: 'Meter',
+      distanceMiFt: 'Fuß',
       speedKmh: 'Kilometer pro Stunde',
       speedMph: 'Meilen pro Stunde',
       languageEnglish: 'English',
@@ -732,9 +731,6 @@ const de = {
       emptyTitle: 'Noch keine Discs',
       emptyBody: 'Kopple eine echte SmartDisc: Gib ihre UUID und ihr Passwort ein — sie erscheint danach hier mit jedem erfassten Wurf.',
       emptyCta: 'Erste Disc koppeln',
-    },
-    discCard: {
-      read: 'Lesen',
     },
     detail: {
       throws: 'Würfe',
@@ -817,6 +813,9 @@ const de = {
       altitudeChart: 'Höhe über Zeit',
       flightPath: {
         title: 'Vorschau',
+        height: 'Höhe',
+        spin: 'Drehzahl',
+        peak: 'Spitze',
       },
       renameSheetTitle: 'Wurf umbenennen',
       renameLabel: 'Name des Wurfs',
@@ -935,7 +934,6 @@ const de = {
     },
     detail: {
       ownedBy: 'Besitzer: {owner}',
-      read: 'Lesen',
       throws: 'Würfe',
       longest: 'Weitester',
       topRpm: 'Top U/min',

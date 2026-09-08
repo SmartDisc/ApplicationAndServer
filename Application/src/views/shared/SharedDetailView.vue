@@ -1,14 +1,14 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { MoreHorizontal, Eye } from 'lucide-vue-next'
+import { MoreHorizontal } from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowRow from '@/components/discs/SdThrowRow.vue'
 import SdDiscImage from '@/components/discs/SdDiscImage.vue'
 import SdAvatar from '@/components/ui/SdAvatar.vue'
-import { SdChip, SdCard, SdIconBtn, SdSectionLabel } from '@/components/ui'
+import { SdCard, SdIconBtn, SdSectionLabel } from '@/components/ui'
 import { useDiscs } from '@/composables/useDiscs'
 import { useThrows, formatThrowTime } from '@/composables/useThrows'
 import { usePreferences } from '@/composables/usePreferences'
@@ -53,7 +53,6 @@ onMounted(() => {
         />
         <div class="hero-info">
           <div class="hero-name">{{ disc.name }}</div>
-          <div class="hero-uuid">{{ disc.uuid }}</div>
           <div class="hero-owner">
             <SdAvatar
               :name="disc.owner || '?'"
@@ -65,10 +64,6 @@ onMounted(() => {
             <span class="hero-uuid">{{ t('shared.detail.ownedBy', { owner: disc.owner }) }}</span>
           </div>
         </div>
-        <SdChip tone="read">
-          <template #icon><Eye :size="12" /></template>
-          {{ t('shared.detail.read') }}
-        </SdChip>
       </div>
       <div class="stat-row">
         <SdStatTile :v="throws.length" :k="t('shared.detail.throws')" />
@@ -85,8 +80,10 @@ onMounted(() => {
 
     <div class="throws-list">
       <SdThrowRow
-        v-for="thr in throws"
+        v-for="(thr, i) in throws"
         :key="thr.id"
+        class="sd-stagger-in"
+        :style="{ '--i': i }"
         :name="thr.name"
         :time="formatThrowTime(t, thr)"
         :rpm="thr.rpm"

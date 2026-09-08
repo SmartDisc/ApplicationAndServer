@@ -55,7 +55,7 @@ onMounted(() => {
     <p v-if="discsError" class="mydisc-error">{{ discsError }}</p>
 
     <div v-if="!discsError && discs.length === 0" class="discs-empty">
-      <div class="discs-empty__card">
+      <div class="discs-empty__card sd-fade-in">
         <p class="discs-empty__title">{{ t('discs.myDiscs.emptyTitle') }}</p>
         <p class="discs-empty__body">{{ t('discs.myDiscs.emptyBody') }}</p>
 
@@ -67,8 +67,10 @@ onMounted(() => {
 
     <div class="mydisc-list">
       <SdDiscCard
-        v-for="disc in discs"
+        v-for="(disc, i) in discs"
         :key="disc.id"
+        class="sd-stagger-in"
+        :style="{ '--i': i }"
         :name="disc.name"
         :uuid="disc.uuid"
         :image-url="disc.imageUrl"

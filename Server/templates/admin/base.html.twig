@@ -9,6 +9,7 @@
         <nav class="admin-nav">
             <a class="{{ app.request.attributes.get('_route') starts with 'app_admin_disc_crud_' ? 'is-active' : '' }}" href="{{ path('app_admin_disc_crud_index') }}">Discs</a>
             <a class="{{ app.request.attributes.get('_route') starts with 'app_admin_user_crud_' ? 'is-active' : '' }}" href="{{ path('app_admin_user_crud_index') }}">Users</a>
+            <a class="{{ app.request.attributes.get('_route') starts with 'app_admin_message_' ? 'is-active' : '' }}" href="{{ path('app_admin_message_index') }}">Messages</a>
             <a class="admin-nav__signout" href="{{ path('app_admin_logout') }}">Sign out</a>
         </nav>
         <span class="admin-nav__user">{{ app.user.userIdentifier }}</span>

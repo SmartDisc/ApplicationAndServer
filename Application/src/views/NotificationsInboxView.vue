@@ -1,7 +1,7 @@
 <script setup>
 import {ref, computed, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
-import {UserPlus, UserCheck, Share2, CheckCircle2, CheckCheck, Check, X, Loader2} from 'lucide-vue-next'
+import {UserPlus, UserCheck, Share2, CheckCircle2, CheckCheck, Check, X, Loader2, Megaphone} from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
 import {useNotifications, bucketNotificationDate} from '@/composables/useNotifications'
@@ -130,6 +130,14 @@ const NOTIF_META = {
     title: d => t('notifications.inbox.joinedTitle', {name: d.byName, disc: d.discName}),
     desc: () => t('notifications.inbox.discInvitationAcceptedDesc'),
   },
+  // Sent from the admin dashboard's Messages tab — title/body are the admin's
+  // own free-form text, not templated like the other notification types.
+  admin_message: {
+    icon: Megaphone,
+    tone: 'gold',
+    title: d => d.title,
+    desc: d => d.body,
+  },
 }
 
 function metaFor(n) {
@@ -142,6 +150,7 @@ function metaFor(n) {
 const groups = computed(() => {
   const order = []
   const byLabel = new Map()
+  let i = 0
 
   for (const n of notifications.value) {
     const {dayKey, dateLabel, clock} = bucketNotificationDate(n.createdAt, language.value)
@@ -155,7 +164,9 @@ const groups = computed(() => {
       byLabel.set(label, [])
       order.push(label)
     }
-    byLabel.get(label).push({...n, clock})
+    // Running index across every group (not reset per day), so the stagger
+    // reads as one continuous list entrance rather than restarting per day.
+    byLabel.get(label).push({...n, clock, _i: i++})
   }
 
   return order.map(label => ({label, items: byLabel.get(label)}))
@@ -199,7 +210,7 @@ function onMarkAllRead() {
       <p v-if="notificationsError" class="notif-error">{{ notificationsError }}</p>
 
       <div v-else-if="notifications.length === 0" class="notif-empty">
-        <div>
+        <div class="sd-fade-in">
           <p class="notif-empty__title">{{ t('notifications.inbox.emptyTitle') }}</p>
           <p class="notif-empty__body">{{ t('notifications.inbox.emptyBody') }}</p>
         </div>
@@ -212,7 +223,8 @@ function onMarkAllRead() {
           <div
               v-for="n in group.items"
               :key="n.id"
-              :class="['notif', { 'notif--unread': !n.read }]"
+              :class="['notif', 'sd-stagger-in', { 'notif--unread': !n.read }]"
+              :style="{ '--i': n._i }"
               @click="onNotifClick(n)"
           >
             <div :class="['notif__dot', { 'notif__dot--read': n.read }]"/>

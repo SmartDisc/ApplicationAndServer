@@ -158,20 +158,21 @@ function openThrow(row) {
     </div>
 
     <!-- Empty-query prompt -->
-    <div v-if="!hasQuery" class="search-hint">{{ t('search.prompt') }}</div>
+    <div v-if="!hasQuery" class="search-hint sd-fade-in">{{ t('search.prompt') }}</div>
 
     <!-- No matches -->
-    <div v-else-if="allResultsCount === 0" class="search-hint">{{ t('search.noResults') }}</div>
+    <div v-else-if="allResultsCount === 0" class="search-hint sd-fade-in">{{ t('search.noResults') }}</div>
 
     <!-- Results -->
     <div v-else class="results">
       <template v-if="showDiscs && discResults.length">
         <p class="results-label">{{ t('search.discsLabel') }}</p>
         <button
-          v-for="disc in discResults"
+          v-for="(disc, i) in discResults"
           :key="disc.id"
           type="button"
-          class="result-row"
+          class="result-row sd-stagger-in"
+          :style="{ '--i': i }"
           @click="openDisc(disc)"
         >
           <SdDiscImage :image-url="disc.imageUrl" :size="38" radius="10px" :alt="disc.name" />
@@ -196,9 +197,10 @@ function openThrow(row) {
              matching the shared-disc convention; SdThrowRow has no chip slot,
              so the chip is layered over the row (RPM suppressed to avoid it). -->
         <div
-          v-for="row in throwResults"
+          v-for="(row, i) in throwResults"
           :key="row.discId + '/' + row.thr.id"
-          class="throw-result"
+          class="throw-result sd-stagger-in"
+          :style="{ '--i': i }"
         >
           <SdThrowRow
             readonly

@@ -9,6 +9,7 @@ import { SdBtn, SdChip, SdIconBtn, SdBottomSheet, SdField } from '@/components/u
 import { Pencil, MoreHorizontal, Share2, Home, Trash2, AlertTriangle } from 'lucide-vue-next'
 import { useDiscs } from '@/composables/useDiscs'
 import { useThrows, formatThrowTime } from '@/composables/useThrows'
+import { useCountUp } from '@/composables/useCountUp'
 import { mapAuthError } from '@/stores/auth'
 import { sanitizeText } from '@/utils/sanitize'
 import { useI18n } from '@/i18n'
@@ -85,10 +86,14 @@ async function handleDelete() {
 }
 
 const throwTime   = computed(() => (throw_.value ? formatThrowTime(t, throw_.value) : ''))
-const durationS   = computed(() => (throw_.value ? `${(throw_.value.durationMs / 1000).toFixed(1)}s` : '—'))
-const maxAlt      = computed(() => (throw_.value?.maxAltM != null ? `${throw_.value.maxAltM.toFixed(2)}m` : '—'))
-const avgTemp     = computed(() => (throw_.value?.avgTempC != null ? `${throw_.value.avgTempC.toFixed(1)}°C` : '—'))
 const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.value.recordedAt).toLocaleString() : '—'))
+
+// Top stat tiles count up from 0 to their real value whenever the throw
+// they're showing changes, rather than just popping in.
+const rpmValue      = useCountUp(computed(() => throw_.value?.rpm ?? null), n => `${Math.round(n)}`)
+const durationS     = useCountUp(computed(() => (throw_.value ? throw_.value.durationMs / 1000 : null)), n => `${n.toFixed(1)}s`)
+const maxAlt        = useCountUp(computed(() => throw_.value?.maxAltM ?? null), n => `${n.toFixed(2)}m`)
+const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null), n => `${n.toFixed(1)}°C`)
 </script>
 
 <template>
@@ -149,28 +154,22 @@ const recordedAt  = computed(() => (throw_.value?.recordedAt ? new Date(throw_.v
       <!-- Stats: two stacked rows on phones, one combined row ≥768px -->
       <div class="stat-rows">
         <div class="stat-row stat-row--primary">
-          <SdStatTile dark :v="throw_?.rpm ?? '—'" :k="t('discs.throwDetail.rpm')" />
+          <SdStatTile dark :v="rpmValue" :k="t('discs.throwDetail.rpm')" />
           <SdStatTile dark :v="durationS" :k="t('discs.throwDetail.duration')" />
-          <SdStatTile dark :v="maxAlt" :k="t('discs.throwDetail.maxAltitude')" />
         </div>
 
         <div class="stat-row stat-row--secondary">
           <SdStatTile dark :v="avgTemp" :k="t('discs.throwDetail.avgTemp')" />
-          <SdStatTile dark :v="recordedAt" :k="t('discs.throwDetail.recordedAt')" />
+          <SdStatTile dark :v="maxAlt" :k="t('discs.throwDetail.maxAltitude')" />
         </div>
       </div>
 
-      <div v-if="throw_?.series?.length" class="throw-charts">
+      <div v-if="throw_?.series?.length" :key="throw_.id" class="throw-charts">
         <SdFlightPathChart :series="throw_.series" :duration-ms="throw_.durationMs" />
         <div class="throw-charts__pair">
           <SdThrowChart :series="throw_.series" metric="rpm" :title="t('discs.throwDetail.spinChart')" />
           <SdThrowChart :series="throw_.series" metric="alt" :title="t('discs.throwDetail.altitudeChart')" />
         </div>
-      </div>
-
-      <div class="throw-meta">
-        <span v-if="throw_?.recordedByName">{{ t('discs.throwDetail.recordedBy', { name: throw_.recordedByName }) }}</span>
-        <span v-if="throw_?.sampleCount != null">{{ t('discs.throwDetail.sampleCount', { count: throw_.sampleCount }) }}</span>
       </div>
 
       <!-- Actions -->

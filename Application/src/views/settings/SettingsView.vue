@@ -120,8 +120,8 @@ const speedSheet = ref(false)
 const languageSheet = ref(false)
 
 const distanceOptions = computed(() => [
-  {value: 'm', label: t('settings.appearance.distanceKmM'), badge: 'km · m'},
-  {value: 'ft', label: t('settings.appearance.distanceMiFt'), badge: 'mi · ft'},
+  {value: 'm', label: t('settings.appearance.distanceKmM'), badge: 'm'},
+  {value: 'ft', label: t('settings.appearance.distanceMiFt'), badge: 'ft'},
 ])
 const distanceLabel = computed(() =>
     distanceOptions.value.find(o => o.value === distanceUnit.value)?.badge ?? 'm'
@@ -490,6 +490,7 @@ function openWebsite() {
   display: flex;
   flex-direction: column;
   gap: 30px;
+  margin-bottom: 20px;
 }
 
 .pref-value {

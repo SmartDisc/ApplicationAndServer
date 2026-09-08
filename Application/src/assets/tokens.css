@@ -179,3 +179,34 @@
   font-feature-settings: 'tnum' 1;
   letter-spacing: 0.01em;
 }
+
+/* ── Motion utilities ────────────────────────────────────────────────────
+   Shared entrance animations for lists and empty/loading states, so every
+   view gets the same feel instead of each screen inventing its own. */
+@keyframes sd-stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Apply to each item of a v-for list alongside :style="{ '--i': index }" —
+   later items start a little later, capped so long lists don't leave the
+   last rows waiting seconds to appear. */
+.sd-stagger-in {
+  animation: sd-stagger-in var(--sd-dur-base) var(--sd-ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), 10) * 45ms);
+}
+
+@keyframes sd-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* For empty states and one-off cards that aren't part of a list. */
+.sd-fade-in {
+  animation: sd-fade-in var(--sd-dur-slow) var(--sd-ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-stagger-in,
+  .sd-fade-in {
+    animation: none;
+  }
+}

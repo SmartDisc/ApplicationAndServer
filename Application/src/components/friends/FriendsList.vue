@@ -42,15 +42,17 @@ async function handleRemove() {
     <SdSectionLabel>{{ t('friends.list.label', { count: friends.length }) }}</SdSectionLabel>
     <p v-if="friendsError" class="friends-error">{{ friendsError }}</p>
     <div v-else-if="friends.length === 0" class="friends-empty">
-      <SdCard padding="28px 20px">
+      <SdCard padding="28px 20px" class="sd-fade-in">
         <p class="friends-empty__title">{{ t('friends.list.emptyTitle') }}</p>
         <p class="friends-empty__body">{{ t('friends.list.emptyBody') }}</p>
       </SdCard>
     </div>
     <SdList v-else>
       <SdListRow
-        v-for="f in friends"
+        v-for="(f, i) in friends"
         :key="f.friendshipId"
+        class="sd-stagger-in"
+        :style="{ '--i': i }"
         :title="f.name"
         :subtitle="f.email"
       >

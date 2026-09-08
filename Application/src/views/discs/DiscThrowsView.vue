@@ -29,8 +29,10 @@ function onToggleFav(thr) {
   <div class="throws-wrap">
     <div class="throws-list">
       <SdThrowRow
-        v-for="thr in throws"
+        v-for="(thr, i) in throws"
         :key="thr.id"
+        class="sd-stagger-in"
+        :style="{ '--i': i }"
         :name="thr.name"
         :time="formatThrowTime(t, thr)"
         :rpm="thr.rpm"
@@ -41,7 +43,7 @@ function onToggleFav(thr) {
       />
     </div>
 
-    <div v-if="!throws.length" class="throws-empty">
+    <div v-if="!throws.length" class="throws-empty sd-fade-in">
       {{ t('discs.throws.empty') }}
     </div>
   </div>

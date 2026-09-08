@@ -1,6 +1,5 @@
 <script setup>
-import { Activity, Eye, Star } from 'lucide-vue-next'
-import SdChip from '@/components/ui/SdChip.vue'
+import { Activity, Star } from 'lucide-vue-next'
 import SdDiscImage from '@/components/discs/SdDiscImage.vue'
 import { useI18n } from '@/i18n'
 
@@ -35,11 +34,7 @@ const { t } = useI18n()
           <span>{{ lastActive }}</span>
         </div>
       </div>
-      <SdChip v-if="shared" tone="read">
-        <template #icon><Eye :size="12" /></template>
-        {{ t('discs.discCard.read') }}
-      </SdChip>
-      <div v-else class="disc-card__actions">
+      <div v-if="!shared" class="disc-card__actions">
         <button
           type="button"
           class="disc-card__fav"

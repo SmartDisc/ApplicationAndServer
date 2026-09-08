@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { SdChip, SdCard } from '@/components/ui'
+import { SdChip, SdCard, SdBtn } from '@/components/ui'
 import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowRow from '@/components/discs/SdThrowRow.vue'
 import { TrendingUp, ChevronRight } from 'lucide-vue-next'
@@ -35,6 +35,7 @@ const range = ref('week')
 const metric = ref('rpm')
 const selectedBar = ref(null)
 const expandedTile = ref(null)
+const bucketExpanded = ref(false)
 
 function avgOf(arr) {
   return arr.length ? arr.reduce((sum, v) => sum + v, 0) / arr.length : null
@@ -182,6 +183,12 @@ const selectedThrows = computed(() => {
   })
 })
 
+// Only the top 2 throws (by the active metric) show by default; the "view
+// all" button reveals the rest of the bucket in place.
+const visibleBucketThrows = computed(() =>
+  bucketExpanded.value ? selectedThrows.value : selectedThrows.value.slice(0, 2)
+)
+
 const selectedLabel = computed(() => {
   const b = selectedBucket.value
   if (!b) return ''
@@ -199,7 +206,6 @@ const chartValue = computed(() =>
 )
 
 // Tiles
-const throwCount = computed(() => windowThrows.value.length)
 const bestRpm = computed(() => maxOf(valuesOf(windowThrows.value, 'rpm')))
 const bestAlt = computed(() => maxOf(valuesOf(windowThrows.value, 'alt')))
 
@@ -228,13 +234,16 @@ function setRange(key) {
   range.value = key
   selectedBar.value = null
   expandedTile.value = null
+  bucketExpanded.value = false
 }
 function setMetric(key) {
   metric.value = key
   selectedBar.value = null
+  bucketExpanded.value = false
 }
 function selectBar(i) {
   selectedBar.value = selectedBar.value === i ? null : i
+  bucketExpanded.value = false
 }
 function toggleTile(key) {
   expandedTile.value = expandedTile.value === key ? null : key
@@ -328,8 +337,10 @@ onMounted(() => {
 
       <div v-if="selectedThrows.length" class="bucket-throws">
         <SdThrowRow
-          v-for="thr in selectedThrows"
+          v-for="(thr, i) in visibleBucketThrows"
           :key="thr.id"
+          class="sd-stagger-in"
+          :style="{ '--i': i }"
           :name="thr.name"
           :time="formatThrowTime(t, thr)"
           :rpm="thr.rpm"
@@ -338,19 +349,24 @@ onMounted(() => {
           @click="openThrow(thr.id)"
           @toggle-fav="onToggleFav(thr)"
         />
+        <SdBtn
+          v-if="selectedThrows.length > 2 && !bucketExpanded"
+          variant="ghost"
+          size="sm"
+          block
+          @click="bucketExpanded = true"
+        >
+          {{ t('discs.stats.viewThrows') }}
+          <template #icon-right>
+            <ChevronRight :size="16" :stroke-width="1.75" />
+          </template>
+        </SdBtn>
       </div>
       <div v-else-if="selectedBucket" class="readout readout--empty">{{ t('discs.stats.noData') }}</div>
     </SdCard>
 
     <!-- Drill-down tiles -->
     <div class="tile-row">
-      <SdStatTile
-        interactive
-        :active="expandedTile === 'count'"
-        :v="throwCount"
-        :k="t('discs.stats.throwCount')"
-        @click="toggleTile('count')"
-      />
       <SdStatTile
         interactive
         :active="expandedTile === 'rpm'"
@@ -370,24 +386,15 @@ onMounted(() => {
     </div>
 
     <SdCard v-if="expandedTile" :padding="16" class="detail-card">
-      <template v-if="expandedTile === 'count'">
-        <div class="stat-label">{{ t('discs.stats.throwCount') }}</div>
-        <button type="button" class="readout" @click="router.push(`/discs/${route.params.id}/throws`)">
-          <div class="throw-name">{{ t('discs.stats.viewThrows') }}</div>
-          <ChevronRight :size="16" :stroke-width="1.75" />
-        </button>
-      </template>
-      <template v-else>
-        <div class="stat-label">{{ t('discs.stats.bestThrow') }}</div>
-        <button v-if="detailThrow" type="button" class="readout" @click="openThrow(detailThrow.id)">
-          <div>
-            <div class="throw-name">{{ detailThrow.name }}</div>
-            <div class="throw-time">{{ formatThrowTime(t, detailThrow) }} · {{ detailValue }}</div>
-          </div>
-          <ChevronRight :size="16" :stroke-width="1.75" />
-        </button>
-        <div v-else class="readout readout--empty">{{ t('discs.stats.noData') }}</div>
-      </template>
+      <div class="stat-label">{{ t('discs.stats.bestThrow') }}</div>
+      <button v-if="detailThrow" type="button" class="readout" @click="openThrow(detailThrow.id)">
+        <div>
+          <div class="throw-name">{{ detailThrow.name }}</div>
+          <div class="throw-time">{{ formatThrowTime(t, detailThrow) }} · {{ detailValue }}</div>
+        </div>
+        <ChevronRight :size="16" :stroke-width="1.75" />
+      </button>
+      <div v-else class="readout readout--empty">{{ t('discs.stats.noData') }}</div>
     </SdCard>
 
     <!-- Averages -->

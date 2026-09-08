@@ -22,10 +22,19 @@ onUnauthorized(() => {
 // equally pre-auth) — showing "your session expired, sign in again" there
 // makes no sense.
 const showSessionExpired = computed(() => sessionExpired.value && !route.meta.guestOnly && route.name !== 'verify')
+
+// Keyed on the outermost matched route record's path template (e.g.
+// "/discs/:id"), not the resolved URL — so switching tabs within a nested
+// route (disc throws/stats/people) or between params on the same route
+// (e.g. one throw to another) doesn't remount the screen; only landing on
+// a genuinely different top-level screen does.
+const pageKey = computed(() => route.matched[0]?.path ?? route.path)
 </script>
 
 <template>
-  <RouterView />
+  <RouterView v-slot="{ Component }">
+    <component :is="Component" :key="pageKey" />
+  </RouterView>
   <SdSessionExpiredModal v-if="showSessionExpired" />
 </template>
 
