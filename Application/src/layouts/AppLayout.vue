@@ -91,7 +91,9 @@ defineProps({
   flex: none;
   width: 100%;
   max-width: var(--sd-content-max);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* Floors the clearance so the pill nav still clears an edge-to-edge system
+     nav/gesture bar even on WebViews that report safe-area-inset-bottom as 0. */
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
 }
 
 /* ── Tablet (≥768px): wider centered content column — navigation stays the

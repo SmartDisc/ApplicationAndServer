@@ -6,7 +6,7 @@ import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowChart from '@/components/discs/SdThrowChart.vue'
 import SdFlightPathChart from '@/components/discs/SdFlightPathChart.vue'
 import { SdBtn, SdChip, SdIconBtn, SdBottomSheet, SdField } from '@/components/ui'
-import { Pencil, MoreHorizontal, Share2, Home, Trash2, AlertTriangle } from 'lucide-vue-next'
+import { Pencil, MoreHorizontal, Home, Trash2, AlertTriangle } from 'lucide-vue-next'
 import { useDiscs } from '@/composables/useDiscs'
 import { useThrows, formatThrowTime } from '@/composables/useThrows'
 import { useCountUp } from '@/composables/useCountUp'
@@ -173,12 +173,8 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
       </div>
 
       <!-- Actions -->
-      <div class="throw-actions">
-        <SdBtn variant="gold" size="md" block>
-          <template #icon-left><Share2 :size="16" :stroke-width="1.75" /></template>
-          {{ t('discs.throwDetail.share') }}
-        </SdBtn>
-        <SdBtn v-if="!isReadOnly" variant="dark-glass" size="md" class="delete-trigger-btn" @click="openDeleteSheet">
+      <div v-if="!isReadOnly" class="throw-actions">
+        <SdBtn variant="dark-glass" size="md" block class="delete-trigger-btn" @click="openDeleteSheet">
           <template #icon-left><Trash2 :size="16" :stroke-width="1.75" /></template>
           {{ t('discs.throwDetail.delete') }}
         </SdBtn>
@@ -423,9 +419,6 @@ const avgTemp       = useCountUp(computed(() => throw_.value?.avgTempC ?? null),
 }
 
 .delete-trigger-btn {
-  flex: none;
-  padding-left: 14px;
-  padding-right: 14px;
   color: var(--sd-danger);
 }
 

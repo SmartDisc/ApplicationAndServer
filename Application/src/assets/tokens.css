@@ -50,7 +50,7 @@
   --sd-glass-light-border: rgba(255, 255, 255, 0.70);
   --sd-glass-light-hi:     rgba(255, 255, 255, 0.90);
 
-  --sd-glass-paper-bg:     rgba(242, 234, 226, 0.62);
+  --sd-glass-paper-bg:     rgba(242, 234, 226, 1);
   --sd-glass-paper-border: rgba(255, 251, 244, 0.65);
 
   --sd-glass-dark-bg:     rgba(16, 42, 87, 0.55);
