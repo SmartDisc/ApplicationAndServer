@@ -86,7 +86,8 @@ defineProps({
 }
 
 .app-tabbar-wrap {
-  position: relative;
+  position: sticky;
+  bottom: 0;
   z-index: 1;
   flex: none;
   width: 100%;
