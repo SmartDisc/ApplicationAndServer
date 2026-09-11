@@ -158,9 +158,12 @@ onMounted(() => {
 }
 
 .shared-actions {
+  margin-top: 2px;
+  margin-right: 3px;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  position: sticky;
 }
 
 </style>
