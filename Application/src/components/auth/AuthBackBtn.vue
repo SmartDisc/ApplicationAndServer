@@ -16,7 +16,7 @@ const { t } = useI18n()
   <button
     class="back-btn"
     :aria-label="t('common.goBack')"
-    @click="router.push(props.to)"
+    @click="router.replace(props.to)"
   >
     <ChevronLeft :size="20" :stroke-width="2" />
   </button>

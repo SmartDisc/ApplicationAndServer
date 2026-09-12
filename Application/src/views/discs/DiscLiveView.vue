@@ -144,7 +144,7 @@ async function stopAndSave() {
   saveError.value = null
   try {
     const saved = await saveThrow(route.params.id, summary)
-    router.push({ path: `/discs/${route.params.id}/throw/${saved.id}`, query: { justRecorded: '1' } })
+    router.push(`/discs/${route.params.id}/throw/${saved.id}`)
   } catch {
     saveError.value = t('discs.live.saveError')
   } finally {
@@ -172,7 +172,7 @@ watch(isRecording, (recording, wasRecording) => {
     </div>
 
     <div class="live-content">
-      <SdAppBar back />
+      <SdAppBar back :back-to="`/discs/${route.params.id}`" />
 
       <div class="live-header">
         <div class="live-eyebrow">{{ t('discs.live.eyebrow') }}</div>

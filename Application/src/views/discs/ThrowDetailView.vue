@@ -23,8 +23,15 @@ const { getThrows, fetchThrows, renameThrow, deleteThrow } = useThrows()
 const { distanceUnit, speedUnit } = usePreferences()
 const { t } = useI18n()
 
-const cameFromRecording = computed(() => route.query.justRecorded === '1')
 const isReadOnly = computed(() => route.name === 'shared-throw-detail')
+// The throw's disc is always the correct "back" destination, regardless of
+// whether this screen was reached from the throws list, search, stats, or
+// straight after recording — so it's set explicitly rather than falling
+// back to browser history, which a `push` earlier in the flow (e.g. just
+// having recorded a throw) can leave pointing somewhere unexpected.
+const parentPath = computed(() =>
+  isReadOnly.value ? `/shared/${route.params.id}` : `/discs/${route.params.id}`
+)
 const disc = computed(() => getDisc(route.params.id))
 const throw_ = computed(() =>
   getThrows(route.params.id).find(th => String(th.id) === String(route.params.throwId)) ?? null
@@ -113,7 +120,7 @@ const maxSpeed = useCountUp(
     </div>
 
     <div class="throw-content">
-      <SdAppBar back :back-to="cameFromRecording ? `/discs/${route.params.id}` : ''" />
+      <SdAppBar back :back-to="parentPath" />
 
       <div class="throw-header">
         <div class="throw-title-row">

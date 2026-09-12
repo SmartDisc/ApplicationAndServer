@@ -29,7 +29,7 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <SdAppBar back></SdAppBar>
+    <SdAppBar back back-to="/shared" :title="disc?.name ?? ''"></SdAppBar>
 
     <!-- Hero card -->
     <SdCard v-if="disc" class="hero-card" :padding="18">

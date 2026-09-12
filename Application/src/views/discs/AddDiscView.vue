@@ -69,7 +69,7 @@ function handleDecode(text) {
 
 <template>
   <AppLayout :tabs="false">
-    <SdAppBar back :title="t('discs.add.title')" />
+    <SdAppBar back back-to="/discs" :title="t('discs.add.title')" />
 
     <div class="add-mode">
       <button

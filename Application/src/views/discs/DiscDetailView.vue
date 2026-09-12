@@ -148,7 +148,7 @@ const activeTab = computed(() => {
 
 <template>
   <AppLayout>
-    <SdAppBar back :title="disc?.name ?? ''">
+    <SdAppBar back back-to="/discs" :title="disc?.name ?? ''">
       <template #action>
       </template>
     </SdAppBar>

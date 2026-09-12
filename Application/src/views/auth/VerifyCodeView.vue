@@ -64,7 +64,7 @@ onUnmounted(() => clearInterval(timer))
 <template>
   <AuthLayout>
     <nav class="auth-nav">
-      <AuthBackBtn />
+      <AuthBackBtn to="/welcome" />
     </nav>
 
     <!-- Header -->

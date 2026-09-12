@@ -12,7 +12,11 @@ const router = useRouter()
 
 function onBack() {
   if (props.backTo) {
-    router.push(props.backTo)
+    // replace, not push: this button means "go back", so it must never grow
+    // the history stack — a push here would leave the screen we're leaving
+    // still sitting behind the destination, and a later back() elsewhere
+    // (one with no explicit backTo of its own) could then land back on it.
+    router.replace(props.backTo)
   } else {
     router.back()
   }
