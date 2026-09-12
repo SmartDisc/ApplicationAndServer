@@ -449,9 +449,6 @@ const en = {
     },
     detail: {
       ownedBy: 'owned by {owner}',
-      throws: 'Throws',
-      longest: 'Longest',
-      topRpm: 'Top RPM',
       recentThrows: 'Recent throws',
       totalSuffix: 'total',
     },
@@ -938,9 +935,6 @@ const de = {
     },
     detail: {
       ownedBy: 'Besitzer: {owner}',
-      throws: 'Würfe',
-      longest: 'Weitester',
-      topRpm: 'Top U/min',
       recentThrows: 'Letzte Würfe',
       totalSuffix: 'gesamt',
     },

@@ -4,33 +4,21 @@ import { useRoute, useRouter } from 'vue-router'
 import { MoreHorizontal } from 'lucide-vue-next'
 import AppLayout from '@/layouts/AppLayout.vue'
 import SdAppBar from '@/components/ui/SdAppBar.vue'
-import SdStatTile from '@/components/ui/SdStatTile.vue'
 import SdThrowRow from '@/components/discs/SdThrowRow.vue'
 import SdDiscImage from '@/components/discs/SdDiscImage.vue'
 import SdAvatar from '@/components/ui/SdAvatar.vue'
 import { SdCard, SdIconBtn, SdSectionLabel } from '@/components/ui'
 import { useDiscs } from '@/composables/useDiscs'
 import { useThrows, formatThrowTime } from '@/composables/useThrows'
-import { usePreferences } from '@/composables/usePreferences'
 import { useI18n } from '@/i18n'
-import { convertDistance, distanceUnitLabel } from '@/utils/units'
 
 const route  = useRoute()
 const router = useRouter()
 const { getSharedDisc } = useDiscs()
 const { getThrows, fetchThrows } = useThrows()
-const { distanceUnit } = usePreferences()
 const { t } = useI18n()
 const disc = computed(() => getSharedDisc(route.params.id))
 const throws = computed(() => getThrows(route.params.id))
-const topRpm = computed(() => {
-  const rpms = throws.value.map(th => th.rpm).filter(rpm => rpm != null)
-  return rpms.length ? Math.max(...rpms) : 0
-})
-// There's no distance data anywhere in this app yet, even for owned discs —
-// stays at the disc's hardcoded 0 until that lands.
-const longest = computed(() => convertDistance(disc.value?.longest ?? 0, distanceUnit.value))
-const longestUnit = computed(() => distanceUnitLabel(distanceUnit.value))
 
 onMounted(() => {
   fetchThrows(route.params.id).catch(() => {
@@ -41,7 +29,7 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <SdAppBar back :title="disc?.name ?? ''" ></SdAppBar>
+    <SdAppBar back></SdAppBar>
 
     <!-- Hero card -->
     <SdCard v-if="disc" class="hero-card" :padding="18">
@@ -64,11 +52,6 @@ onMounted(() => {
             <span class="hero-uuid">{{ t('shared.detail.ownedBy', { owner: disc.owner }) }}</span>
           </div>
         </div>
-      </div>
-      <div class="stat-row">
-        <SdStatTile :v="throws.length" :k="t('shared.detail.throws')" />
-        <SdStatTile :v="longest" :u="longestUnit" :k="t('shared.detail.longest')" />
-        <SdStatTile :v="topRpm" :k="t('shared.detail.topRpm')" />
       </div>
     </SdCard>
 
@@ -139,8 +122,6 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.stat-row { display: flex; gap: 10px; }
 
 .section-header {
   display: flex;
