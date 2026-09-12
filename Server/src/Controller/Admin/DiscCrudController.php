@@ -5,6 +5,8 @@ namespace App\Controller\Admin;
 use App\Entity\Disc;
 use App\Repository\DiscRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -62,10 +64,30 @@ final class DiscCrudController extends AbstractController
             return $this->redirectToRoute('app_admin_disc_crud_index');
         }
 
+        // The plaintext password only ever exists for this one request (see
+        // create() above), so the QR code — which must encode it to be useful
+        // for pairing — can only ever be built here, never regenerated later.
+        // It's rendered as a data URI and never written to disk.
+        $pairingUri = self::buildPairingUri($reveal['id'], $reveal['password']);
+        $qrDataUri = (new Builder())->build(
+            writer: new PngWriter(),
+            data: $pairingUri,
+            size: 320,
+            margin: 12,
+        )->getDataUri();
+
         return $this->render('admin/disc_crud/created.html.twig', [
             'id' => $reveal['id'],
             'password' => $reveal['password'],
+            'qrDataUri' => $qrDataUri,
         ]);
+    }
+
+    // Same scheme the app's QR scanner parses (see parsePairingPayload in
+    // Application/src/utils/pairing.js) — keep both sides in sync if this changes.
+    private static function buildPairingUri(string $id, string $password): string
+    {
+        return sprintf('smartdisc://pair?id=%s&password=%s', rawurlencode($id), rawurlencode($password));
     }
 
     #[Route('/{id}/delete', name: 'app_admin_disc_crud_delete', methods: ['POST'])]

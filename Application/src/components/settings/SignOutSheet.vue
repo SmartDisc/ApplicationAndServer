@@ -36,6 +36,7 @@ async function handleSignOut() {
 <template>
   <SdBottomSheet v-model="open" :title="t('settings.accountSecurity.signOutSheetTitle')">
     <div class="pw-stack">
+      <p class="signout-body">{{ t('settings.accountSecurity.signOutSheetBody') }}</p>
       <div class="pw-actions">
         <SdBtn variant="ghost" size="md" style="flex:1;" @click="open = false">{{ t('common.cancel') }}</SdBtn>
         <SdBtn
@@ -65,6 +66,14 @@ async function handleSignOut() {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+}
+
+.signout-body {
+  font-family: var(--sd-font-body);
+  font-size: 13px;
+  color: var(--sd-fg2);
+  line-height: 1.4;
+  margin: 0;
 }
 
 .danger-confirm-btn {

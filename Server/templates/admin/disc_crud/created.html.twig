@@ -19,6 +19,14 @@
             <span class="admin-reveal__label">Password</span>
             <code class="admin-reveal__value">{{ password }}</code>
         </div>
+
+        <div class="admin-qr">
+            <img class="admin-qr__image" src="{{ qrDataUri }}" alt="Pairing QR code for disc {{ id }}">
+            <div class="admin-qr__body">
+                <a class="admin-btn" href="{{ qrDataUri }}" download="disc-{{ id }}-qr.png">Download QR code</a>
+                <p class="admin-qr__hint">Scanning this in the SmartDisc app pairs the disc instantly. Like the password above, it can only be generated this once — save the image now if you plan to print it on the packaging.</p>
+            </div>
+        </div>
     </div>
 
     <a class="admin-btn" href="{{ path('app_admin_disc_crud_index') }}">Done, back to list</a>

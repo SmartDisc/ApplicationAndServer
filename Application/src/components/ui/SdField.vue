@@ -1,5 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
+import { useI18n } from '@/i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -18,6 +22,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 const focused = ref(false)
+const revealed = ref(false)
+
+const inputType = computed(() => {
+  if (props.type !== 'password') return props.type
+  return revealed.value ? 'text' : 'password'
+})
 
 function onInput(e) {
   let value = e.target.value
@@ -52,7 +62,7 @@ function onInput(e) {
 
       <input
         :value="modelValue"
-        :type="type"
+        :type="inputType"
         :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"
@@ -68,6 +78,17 @@ function onInput(e) {
       <span v-if="$slots.action" class="sd-field__action">
         <slot name="action" />
       </span>
+      <button
+        v-else-if="type === 'password'"
+        type="button"
+        class="sd-field__action sd-field__toggle"
+        :class="{ 'sd-field__toggle--active': revealed }"
+        @click="revealed = !revealed"
+        :aria-label="revealed ? t('common.hidePassword') : t('common.showPassword')"
+      >
+        <EyeOff v-if="revealed" :size="18" :stroke-width="1.75" />
+        <Eye v-else :size="18" :stroke-width="1.75" />
+      </button>
     </div>
 
     <span v-if="error" class="sd-field__error">{{ error }}</span>
@@ -152,6 +173,19 @@ function onInput(e) {
   align-items: center;
   margin-left: -4px;
 }
+
+.sd-field__toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  color: var(--sd-fg3);
+  transition: color var(--sd-dur-fast) var(--sd-ease-out);
+}
+.sd-field__toggle:hover      { color: var(--sd-azure); }
+.sd-field__toggle--active    { color: var(--sd-azure); }
 
 .sd-field__error {
   font-family: var(--sd-font-display);

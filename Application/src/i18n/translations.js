@@ -7,6 +7,8 @@ const en = {
     save: 'Save',
     goBack: 'Go back',
     read: 'Read',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   tabBar: {
     myDiscs: 'My Discs',
@@ -47,8 +49,6 @@ const en = {
     repeatPassword: 'repeat password',
     repeatPasswordPlaceholder: 'repeat your password',
     currentPasswordPlaceholder: '••••••••',
-    showPasswordRules: 'Show password rules',
-    hidePasswordRules: 'Hide password rules',
     signUp: {
       eyebrow: 'Create account',
       title: 'Hi there.',
@@ -162,9 +162,6 @@ const en = {
     body: 'Your session has expired. Please sign in again to continue.',
     cta: 'Go to sign in',
   },
-  passwordHint: {
-    title: 'Password requirements',
-  },
   settings: {
     page: {
       title: 'Settings',
@@ -222,6 +219,7 @@ const en = {
       deleteWarningBody: 'This permanently deletes your account and all associated data. This action cannot be undone.',
       deleting: 'Deleting…',
       signOutSheetTitle: 'Sign out',
+      signOutSheetBody: 'Are you sure you want to sign out?',
       signOutConfirm: 'Sign out',
       signingOut: 'Signing out…',
     },
@@ -387,6 +385,11 @@ const en = {
     },
     add: {
       title: 'Pair a disc',
+      scanTab: 'Scan QR code',
+      manualTab: 'Enter manually',
+      scanHint: 'Point your camera at the QR code on the disc or its packaging.',
+      cameraError: "Couldn't access the camera. Enter the disc's UUID and password manually instead.",
+      invalidQr: "That QR code isn't a SmartDisc pairing code.",
       uuidLabel: 'Disc UUID',
       uuidPlaceholder: 'e.g. 9224b45d-4ab0-4ba4-a318-de6d898d6c45',
       passwordLabel: 'Disc password',
@@ -493,6 +496,8 @@ const de = {
     save: 'Speichern',
     goBack: 'Zurück',
     read: 'Lesen',
+    showPassword: 'Passwort anzeigen',
+    hidePassword: 'Passwort ausblenden',
   },
   tabBar: {
     myDiscs: 'Meine Discs',
@@ -533,8 +538,6 @@ const de = {
     repeatPassword: 'Passwort wiederholen',
     repeatPasswordPlaceholder: 'Passwort wiederholen',
     currentPasswordPlaceholder: '••••••••',
-    showPasswordRules: 'Passwortregeln anzeigen',
-    hidePasswordRules: 'Passwortregeln ausblenden',
     signUp: {
       eyebrow: 'Konto erstellen',
       title: 'Hallo!',
@@ -648,9 +651,6 @@ const de = {
     body: 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an, um fortzufahren.',
     cta: 'Zur Anmeldung',
   },
-  passwordHint: {
-    title: 'Passwortanforderungen',
-  },
   settings: {
     page: {
       title: 'Einstellungen',
@@ -708,6 +708,7 @@ const de = {
       deleteWarningBody: 'Dies löscht dein Konto und alle zugehörigen Daten dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.',
       deleting: 'Wird gelöscht…',
       signOutSheetTitle: 'Abmelden',
+      signOutSheetBody: 'Möchtest du dich wirklich abmelden?',
       signOutConfirm: 'Abmelden',
       signingOut: 'Wird abgemeldet…',
     },
@@ -873,6 +874,11 @@ const de = {
     },
     add: {
       title: 'Disc koppeln',
+      scanTab: 'QR-Code scannen',
+      manualTab: 'Manuell eingeben',
+      scanHint: 'Richte die Kamera auf den QR-Code auf der Disc oder der Verpackung.',
+      cameraError: 'Kamerazugriff nicht möglich. Gib UUID und Passwort der Disc stattdessen manuell ein.',
+      invalidQr: 'Das ist kein SmartDisc-Koppel-QR-Code.',
       uuidLabel: 'Disc-UUID',
       uuidPlaceholder: 'z.B. 9224b45d-4ab0-4ba4-a318-de6d898d6c45',
       passwordLabel: 'Disc-Passwort',

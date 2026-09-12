@@ -1,13 +1,11 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Mail, Lock, Info } from 'lucide-vue-next'
+import { User, Mail, Lock } from 'lucide-vue-next'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import AuthBackBtn from '@/components/auth/AuthBackBtn.vue'
 import { SdBtn, SdField } from '@/components/ui'
-import SdPasswordHint from '@/components/auth/SdPasswordHint.vue'
 import { useAuth } from '@/composables/useAuth'
-import { useClickOutside } from '@/composables/useClickOutside'
 import { email as validateEmail, password as validatePassword, required } from '@/utils/validate'
 import { sanitizeName, sanitizeEmail, sanitizePassword } from '@/utils/sanitize'
 import { useI18n } from '@/i18n'
@@ -18,9 +16,6 @@ const { t } = useI18n()
 
 const form   = reactive({ name: '', email: '', password: '', confirm: '' })
 const errors = reactive({ name: '', email: '', password: '', confirm: '' })
-const showHint = ref(false)
-const passwordWrapRef = ref(null)
-useClickOutside(passwordWrapRef, () => { showHint.value = false })
 
 function validate() {
   errors.name     = form.name.trim().length >= 2 ? '' : t('validate.nameTooShort')
@@ -88,35 +83,20 @@ async function handleSubmit() {
         <template #icon><Mail :size="18" :stroke-width="1.75" /></template>
       </SdField>
 
-      <!-- Password with info toggle -->
-      <div class="password-wrap" ref="passwordWrapRef">
-        <SdField
-          v-model="form.password"
-          :label="t('auth.password')"
-          :placeholder="t('auth.passwordPlaceholder')"
-          type="password"
-          autocomplete="new-password"
-          :error="errors.password"
-          :disabled="isLoading"
-          :sanitize="sanitizePassword"
-          :maxlength="128"
-          @input="errors.password = ''; errors.confirm = ''"
-        >
-          <template #icon><Lock :size="18" :stroke-width="1.75" /></template>
-          <template #action>
-            <button
-              type="button"
-              class="info-btn"
-              :class="{ 'info-btn--active': showHint }"
-              @click="showHint = !showHint"
-              :aria-label="showHint ? t('auth.hidePasswordRules') : t('auth.showPasswordRules')"
-            >
-              <Info :size="16" :stroke-width="1.75" />
-            </button>
-          </template>
-        </SdField>
-        <SdPasswordHint v-if="showHint" :value="form.password" />
-      </div>
+      <SdField
+        v-model="form.password"
+        :label="t('auth.password')"
+        :placeholder="t('auth.passwordPlaceholder')"
+        type="password"
+        autocomplete="new-password"
+        :error="errors.password"
+        :disabled="isLoading"
+        :sanitize="sanitizePassword"
+        :maxlength="128"
+        @input="errors.password = ''; errors.confirm = ''"
+      >
+        <template #icon><Lock :size="18" :stroke-width="1.75" /></template>
+      </SdField>
 
       <!-- Confirm password -->
       <SdField
@@ -165,30 +145,6 @@ async function handleSubmit() {
 </template>
 
 <style scoped>
-.password-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--sd-fg3);
-  transition: color var(--sd-dur-fast) var(--sd-ease-out),
-              background var(--sd-dur-fast) var(--sd-ease-out);
-}
-.info-btn:hover       { color: var(--sd-azure); background: rgba(111,147,181,.10); }
-.info-btn--active     { color: var(--sd-azure); background: rgba(111,147,181,.14); }
-
 .sign-up__legal {
   font-family: var(--sd-font-body);
   font-size: 12px;

@@ -338,3 +338,28 @@ form.admin-form { display: flex; flex-direction: column; gap: 16px; }
   color: var(--sd-fg1);
   word-break: break-all;
 }
+
+.admin-qr {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(16,42,87,.08);
+}
+.admin-qr__image {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--sd-r-sm);
+  border: 1px solid rgba(16,42,87,.1);
+  background: #fff;
+  flex: none;
+}
+.admin-qr__body { display: flex; flex-direction: column; gap: 10px; }
+.admin-qr__hint {
+  font-family: var(--sd-font-body);
+  font-size: 13px;
+  color: var(--sd-fg3);
+  margin: 0;
+  max-width: 360px;
+}

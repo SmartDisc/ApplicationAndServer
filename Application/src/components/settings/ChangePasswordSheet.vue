@@ -2,7 +2,6 @@
 import {ref, computed, watch} from 'vue'
 import {KeyRound} from 'lucide-vue-next'
 import {SdBtn, SdField, SdBottomSheet} from '@/components/ui'
-import SdPasswordHint from '@/components/auth/SdPasswordHint.vue'
 import {useAuth} from '@/composables/useAuth'
 import {mapAuthError} from '@/stores/auth'
 import {sanitizePassword} from '@/utils/sanitize'
@@ -95,7 +94,6 @@ async function handlePasswordChange() {
           :sanitize="sanitizePassword"
           :maxlength="128"
       />
-      <SdPasswordHint :value="newPw"/>
       <SdField
           v-model="confirmPw"
           :label="t('settings.accountSecurity.repeatNewPassword')"
